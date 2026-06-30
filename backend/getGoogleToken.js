@@ -1,8 +1,8 @@
 const { google } = require("googleapis");
 const readline = require("readline");
 
-const CLIENT_ID =  process.env.GOOGLE_CLIENT_ID;
-const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+const CLIENT_ID =  "paste google client id here";
+const CLIENT_SECRET = "paste google client secret here";
 const REDIRECT_URI = "http://localhost:3000";
 
 const oAuth2Client = new google.auth.OAuth2(
