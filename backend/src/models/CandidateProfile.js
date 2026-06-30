@@ -19,6 +19,6 @@ const candidateProfileSchema = new mongoose.Schema(
     experience: { type: Number, required: true },
   },
   { timestamps: true },
-);ksfdg
+);
 
 module.exports = mongoose.model("CandidateProfile", candidateProfileSchema);

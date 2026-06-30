@@ -141,7 +141,7 @@ export default function JobApplicantsPage() {
         </Button>
       </Container>
     );
-  }
+  }  
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 8 }}>
@@ -178,6 +178,11 @@ export default function JobApplicantsPage() {
                 (cs) => cs.toLowerCase() === js.toLowerCase()
               )
           );
+          console.log("job skills are", jobSkills);
+          console.log("candidate skills are", candidateSkills);
+          
+          console.log("matched skills are", matchedSkills)
+          console.log("missing skills are", missingSkills)
 
           return (
             <Paper
@@ -289,9 +294,11 @@ export default function JobApplicantsPage() {
                       key={skill}
                       label={skill}
                       size="small"
-                      color="primary"
+                      // color="primary"
                       variant="contained"
-                      sx={{ fontWeight: 600 }}
+                      sx={{ fontWeight: 600 ,
+                        color:"InfoText",
+                      }}
                     />
                   ))}
                   {missingSkills.map((skill) => (
@@ -299,12 +306,11 @@ export default function JobApplicantsPage() {
                       key={skill}
                       label={skill}
                       size="small"
-                      color="error"
+                      // color="error"
                       variant="outlined"
                       sx={{
                         border: "2px solid",
-                        borderColor: "error.main",
-                        color: "error.main",
+                        color:"InfoText",
                         fontWeight: 600,
                       }}
                     />

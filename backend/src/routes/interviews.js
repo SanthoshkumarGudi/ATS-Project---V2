@@ -243,8 +243,8 @@ router.put(
 
       // Prepare Email Content
       const emailHTMLForCandidate = `
-      <h2>Interview Scheduled</h2>
-      <p><strong>Job Title:</strong> ${application.job.title}</p>
+      <h2>Interview Scheduled for <p><strong> ${application.job.title}</strong></p></h2>
+     
       <p><strong>Round:</strong> ${round}</p>
       <p><strong>Date & Time:</strong> ${new Date(scheduledAt).toLocaleString("en-IN")}</p>
       <br>
@@ -258,9 +258,8 @@ router.put(
     `;
 
       const emailHTMLForInterviewer = `
-      <h2>New Interview Scheduled</h2>
+      <h2>New Interview Scheduled <p><strong>${application.job.title}</strong></p></h2>
       <p><strong>Candidate:</strong> ${application.candidate?.name || app.parsedData?.name || "N/A"}</p>
-      <p><strong>Job Title:</strong> ${application.job.title}</p>
       <p><strong>Round:</strong> ${round}</p>
       <p><strong>Date & Time:</strong> ${new Date(scheduledAt).toLocaleString("en-IN")}</p>
       <br>

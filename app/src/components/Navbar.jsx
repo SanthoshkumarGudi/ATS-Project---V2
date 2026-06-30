@@ -80,11 +80,11 @@ export const Navbar = () => {
             }}
             onClick={() => navigate("/")}
           >
-            Karmiq
+            Prixgen 
           </Typography>
         </Stack>
 
-        {/* 🔷 Mobile */}
+        {/*  Mobile */}
         {isMobile ? (
           <>
             <IconButton onClick={() => setDrawerOpen(true)}>

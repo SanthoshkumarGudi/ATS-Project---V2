@@ -324,8 +324,8 @@ router.post("/:jobId", protect, upload.single("resume"), async (req, res) => {
 
     const candidateSkills = parsed.skills;
     const jobSkills = job.skills.map((s) => normalize(s));
-    console.log("Job Skills are", jobSkills);
-    console.log("Candidate Skills are", candidateSkills);
+    console.log("Job Skills are*******************************", jobSkills);
+    console.log("Candidate Skills are*************************", candidateSkills);
     // const matched = jobSkills.filter(s => candidateSkills.includes(s)); // it does the strict matching
     const matched = [];
 
@@ -401,6 +401,7 @@ router.post("/:jobId", protect, upload.single("resume"), async (req, res) => {
       isShortlisted,
       application,
     });
+    console.log("is Shortlisted**********", isShortlisted)
   } catch (err) {
     console.error("Apply error:", err);
     console.log("error *7* is ", err);

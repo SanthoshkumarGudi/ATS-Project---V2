@@ -108,6 +108,8 @@ export default function CandidatesList() {
     );
   }
 
+  const candidateInformation=['candidate Image', 'Name', 'Email', 'Job Title', 'Department', 'Status', 'Applied On']
+
   return (
     <Container sx={{ mt: 4 }}>
       {/* Header */}
@@ -180,14 +182,14 @@ export default function CandidatesList() {
       ) : (
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
-            <tr>
-              <th style={{ textAlign: "left", padding: "12px" }}>Candidate Image</th>
-              <th style={{ textAlign: "left", padding: "12px" }}>Name</th>
-              <th style={{ textAlign: "left", padding: "12px" }}>Email</th>
-              <th style={{ textAlign: "left", padding: "12px" }}>Job Title</th>
-              <th style={{ textAlign: "left", padding: "12px" }}>Department</th>
-              <th style={{ textAlign: "left", padding: "12px" }}>Status</th>
-              <th style={{ textAlign: "left", padding: "12px" }}>Applied On</th>
+            <tr>              
+              <th style={{ textAlign: "left", padding: "12px" }}>{candidateInformation[0]}</th>
+              <th style={{ textAlign: "left", padding: "12px" }}>{candidateInformation[1]}</th>
+              <th style={{ textAlign: "left", padding: "12px" }}>{candidateInformation[2]}</th>
+              <th style={{ textAlign: "left", padding: "12px" }}>{candidateInformation[3]}</th>
+              <th style={{ textAlign: "left", padding: "12px" }}>{candidateInformation[4]}</th>
+              <th style={{ textAlign: "left", padding: "12px" }}>{candidateInformation[5]}</th>
+              <th style={{ textAlign: "left", padding: "12px" }}>{candidateInformation[6]}</th>
             </tr>
           </thead>
           <tbody>

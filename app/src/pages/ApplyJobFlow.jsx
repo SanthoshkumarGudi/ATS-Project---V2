@@ -158,6 +158,7 @@ export default function ApplyJobFlow() {
 
   if (loading) return <LinearProgress />;
   if (!job) return <Alert severity="error">Job not found</Alert>;
+  console.log("job is", job)
 
   return (
     <Box

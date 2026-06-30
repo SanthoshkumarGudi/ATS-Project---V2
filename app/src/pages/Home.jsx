@@ -101,7 +101,7 @@ export default function Home() {
                 Made Simple.
               </Typography>
 
-              <Typography
+              {/* <Typography
                 variant="h6"
                 sx={{
                   color: "#cbd5e1",
@@ -113,7 +113,7 @@ export default function Home() {
               >
                 The intelligent Applicant Tracking System that helps companies
                 hire faster and candidates find their dream job.
-              </Typography>
+              </Typography> */}
 
               <Stack direction={{ xs: "column", sm: "row" }} spacing={3}>
                 {!user ? (

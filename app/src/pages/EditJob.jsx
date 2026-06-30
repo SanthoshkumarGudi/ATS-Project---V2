@@ -57,6 +57,8 @@ export default function EditJob() {
         });
 
         const job = res.data;
+        console.log("job is ", job);
+        
         setFormData({
           title: job.title || "",
           description: job.description || "",

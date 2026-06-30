@@ -13,11 +13,14 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
-  FormHelperText,
+  InputAdornment,
+  IconButton,
+  Paper,
 } from "@mui/material";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import { GoogleLogin } from "@react-oauth/google";
+import { Mail, Lock, Eye, EyeOff, User, Briefcase } from "lucide-react";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -30,56 +33,42 @@ export default function AuthPage() {
     password: "",
     role: "candidate",
   });
-
-  // Individual field errors
   const [fieldErrors, setFieldErrors] = useState({
     name: "",
     email: "",
     password: "",
   });
-
-  const [error, setError] = useState(""); // Server/general error
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-      // if (!name) return; // ✅ Prevent crash
-    setFormData({ ...formData, [name]: value });
-    console.log("form data", formData);
-    // Clear field error on typing
+    setFormData((prev) => ({ ...prev, [name]: value }));
     if (fieldErrors[name]) {
-      console.log("inside error");
-      
-      setFieldErrors({ ...fieldErrors, [name]: "" });
+      setFieldErrors((prev) => ({ ...prev, [name]: "" }));
     }
-    
   };
 
-  // Client-side validation for registration
   const validateRegister = () => {
     const errors = {};
-
     if (!formData.name.trim()) {
       errors.name = "Full name is required";
     } else if (formData.name.trim().length < 3) {
-      errors.name = "Name must be at least 2 characters";
+      errors.name = "Name must be at least 3 characters";
     }
-
     if (!formData.email.trim()) {
       errors.email = "Email is required";
     } else if (!/^\S+@\S+\.\S+$/.test(formData.email.trim())) {
       errors.email = "Please enter a valid email address";
     }
-
     if (!formData.password) {
       errors.password = "Password is required";
     } else if (formData.password.length < 8) {
       errors.password = "Password must be at least 8 characters";
     } else if (!/(?=.*[a-zA-Z])(?=.*\d)/.test(formData.password)) {
-      errors.password =
-        "Password must contain at least one letter and one number";
+      errors.password = "Must contain at least one letter and one number";
     }
-
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -87,212 +76,283 @@ export default function AuthPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-
-    // Run validation only on register
-    if (!isLogin && !validateRegister()) {
-      return; // Stop submission if validation fails
-    }
-
+    if (!isLogin && !validateRegister()) return;
     setLoading(true);
     const url = isLogin ? "/api/login" : "/api/register";
-
     try {
       const res = await axios.post(`${API_URL}${url}`, {
         ...formData,
         email: formData.email.toLowerCase().trim(),
       });
-
       login(res.data.token, res.data.user);
       window.location.href = "/";
     } catch (err) {
       setError(
         err.response?.data?.message ||
-          (isLogin ? "Invalid credentials" : "Registration failed"),
+          (isLogin ? "Invalid credentials" : "Registration failed")
       );
     } finally {
       setLoading(false);
     }
   };
 
-  const switchToRegister = () => {
-    setIsLogin(false);
+  const switchMode = (toLogin) => {
+    setIsLogin(toLogin);
     setError("");
     setFieldErrors({ name: "", email: "", password: "" });
     setFormData({ name: "", email: "", password: "", role: "candidate" });
-  };
-
-  const switchToLogin = () => {
-    setIsLogin(true);
-    setError("");
-    setFieldErrors({ name: "", email: "", password: "" });
-    setFormData({ name: "", email: "", password: "", role: "candidate" });
+    setShowPassword(false);
   };
 
   return (
-    <Container maxWidth="xs" sx={{ mt: 8 }}>
-      {/* Header */}
-      <Box sx={{ textAlign: "center", mb: 6 }}>
-        <Typography
-          variant="h2"
-          fontWeight="800"
+    <Box
+      sx={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background:
+          "linear-gradient(135deg, #f0fdfa 0%, #e0f2fe 50%, #ede9fe 100%)",
+        px: 2,
+      }}
+    >
+      <Container maxWidth="xs">
+        <Paper
+          elevation={0}
           sx={{
-            background: "linear-gradient(120deg, #4f46e5, #14b8a6)",
-            backgroundClip: "text",
-            WebkitBackgroundClip: "text",
-            color: "transparent",
-            mb: 1,
+            p: { xs: 3, sm: 4 },
+            borderRadius: 3,
+            border: "1px solid",
+            borderColor: "divider",
+            backgroundColor: "background.paper",
           }}
         >
-          Karmiq
-        </Typography>
-        <Typography variant="h6" color="text.secondary" fontWeight="500">
-          Intelligent Applicant Tracking System
-        </Typography>
-      </Box>
+          {/* Logo / Brand */}
+          <Box sx={{ textAlign: "center", mb: 4 }}>
+            <Typography
+              variant="h4"
+              fontWeight="800"
+              sx={{
+                background: "linear-gradient(120deg, #4f46e5, #0d9488)",
+                backgroundClip: "text",
+                WebkitBackgroundClip: "text",
+                color: "transparent",
+                letterSpacing: "-0.5px",
+                mb: 0.5,
+              }}
+            >
+              Prixgen
+            </Typography>
+          </Box>
 
-      <Box component="form" onSubmit={handleSubmit} sx={{ mt: 4 }}>
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
+          {/* Tab-style toggle */}
+          <Box
+            sx={{
+              display: "flex",
+              mb: 3,
+              p: 0.5,
+              borderRadius: 2,
+              backgroundColor: "action.hover",
+            }}
+          >
+            {["Sign in", "Sign up"].map((label, i) => {
+              const active = isLogin === (i === 0);
+              return (
+                <Box
+                  key={label}
+                  onClick={() => switchMode(i === 0)}
+                  sx={{
+                    flex: 1,
+                    py: 1,
+                    textAlign: "center",
+                    borderRadius: 1.5,
+                    cursor: "pointer",
+                    fontSize: 14,
+                    fontWeight: active ? 600 : 400,
+                    color: active ? "text.primary" : "text.secondary",
+                    backgroundColor: active ? "background.paper" : "transparent",
+                    boxShadow: active ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+                    transition: "all 0.2s ease",
+                    userSelect: "none",
+                  }}
+                >
+                  {label}
+                </Box>
+              );
+            })}
+          </Box>
 
-        {/* Name - Only on Register */}
-        {!isLogin && (
-          <TextField
-            fullWidth
-            label="Full Name"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            margin="normal"
-            required
-            autoFocus
-            error={!!fieldErrors.name}
-            helperText={fieldErrors.name}
-          />
-        )}
+          {error && (
+            <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
+              {error}
+            </Alert>
+          )}
 
-        <TextField
-          fullWidth
-          label="Email Address"
-          name="email"
-          type="email"
-          value={formData.email}
-          onChange={handleChange}
-          margin="normal"
-          required
-          autoFocus={isLogin}
-          error={!!fieldErrors.email}
-          helperText={fieldErrors.email}
-        />
+          <Box component="form" onSubmit={handleSubmit}>
+            {/* Name — register only */}
+            {!isLogin && (
+              <TextField
+                fullWidth
+                label="Full name"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                margin="normal"
+                required
+                autoFocus
+                error={!!fieldErrors.name}
+                helperText={fieldErrors.name}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <User size={18} color="var(--mui-palette-text-secondary, #6b7280)" />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            )}
 
-        <TextField
-          fullWidth
-          label="Password"
-          name="password"
-          type="password"
-          value={formData.password}
-          onChange={handleChange}
-          margin="normal"
-          required
-          error={!!fieldErrors.password}
-          helperText={
-            fieldErrors.password || "Min 8 chars, 1 letter & 1 number"
-          }
-        />
-
-        {/* Role - Only on Register */}
-        {/* {!isLogin && (
-          <FormControl fullWidth margin="normal">
-            <InputLabel>Role</InputLabel>
-            <Select
-              name="role"
-              value={formData.role}
+            <TextField
+              fullWidth
+              label="Email address"
+              name="email"
+              type="email"
+              value={formData.email}
               onChange={handleChange}
-              label="Role"
-            >
-              <MenuItem value="candidate">Candidate</MenuItem>
-              <MenuItem value="hiring_manager">Hiring Manager</MenuItem>
-              <MenuItem value="admin">Admin</MenuItem>
-              <MenuItem value="interviewer">Interviewer</MenuItem>
-            </Select>
-          </FormControl>
-        )} */}
+              margin="normal"
+              required
+              autoFocus={isLogin}
+              error={!!fieldErrors.email}
+              helperText={fieldErrors.email}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Mail size={18} color="var(--mui-palette-text-secondary, #6b7280)" />
+                  </InputAdornment>
+                ),
+              }}
+            />
 
-        <Button
-          type="submit"
-          fullWidth
-          variant="contained"
-          size="large"
-          sx={{ mt: 3, py: 1.5 }}
-          disabled={loading}
-        >
-          {loading ? "Please wait..." : isLogin ? "Sign In" : "Create Account"}
-        </Button>
-      </Box>
-
-      {/* Divider + Google Login + Toggle */}
-      <Box sx={{ mt: 4, textAlign: "center" }}>
-        <Divider sx={{ mb: 3 }}>
-          <Typography variant="body2" color="text.secondary">
-            or
-          </Typography>
-        </Divider>
-
-        <Box sx={{ display: "flex", justifyContent: "center", mb: 3 }}>
-          <GoogleLogin
-            onSuccess={async (credentialResponse) => {
-              try {
-                const { data } = await axios.post(
-                  `${API_URL}/api/auth/google`,
-                  {
-                    credential: credentialResponse.credential,
-                  },
-                );
-                login(data.token, data.user);
-                window.location.href = "/";
-              } catch (err) {
-                setError(err.response?.data?.message || "Google login failed");
+            <TextField
+              fullWidth
+              label="Password"
+              name="password"
+              type={showPassword ? "text" : "password"}
+              value={formData.password}
+              onChange={handleChange}
+              margin="normal"
+              required
+              error={!!fieldErrors.password}
+              helperText={
+                fieldErrors.password ||
+                (!isLogin ? "Min 8 characters, include a letter and number" : "")
               }
-            }}
-            onError={() => {
-              setError("Google Login Failed");
-            }}
-            theme="outline"
-            size="large"
-            text="signin_with"
-            shape="rectangular"
-            width="340"
-          />
-        </Box>
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Lock size={18} color="var(--mui-palette-text-secondary, #6b7280)" />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowPassword((v) => !v)}
+                      edge="end"
+                      size="small"
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
 
-        {isLogin ? (
-          <Typography variant="body1">
-            Don't have an account?{" "}
-            <Link
-              component="button"
-              variant="body1"
-              onClick={switchToRegister}
-              sx={{ fontWeight: 600 }}
+            {/* Role — register only */}
+            {!isLogin && (
+              <FormControl fullWidth margin="normal">
+                <InputLabel>Role</InputLabel>
+                <Select
+                  name="role"
+                  value={formData.role}
+                  onChange={handleChange}
+                  label="Role"
+                  startAdornment={
+                    <InputAdornment position="start">
+                      <Briefcase size={18} color="var(--mui-palette-text-secondary, #6b7280)" />
+                    </InputAdornment>
+                  }
+                >
+                  <MenuItem value="candidate">Candidate</MenuItem>
+                  <MenuItem value="hiring_manager">Hiring Manager</MenuItem>
+                  <MenuItem value="interviewer">Interviewer</MenuItem>
+                  <MenuItem value="admin">Admin</MenuItem>
+                </Select>
+              </FormControl>
+            )}
+
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              size="large"
+              sx={{
+                mt: 2.5,
+                py: 1.4,
+                borderRadius: 2,
+                fontWeight: 600,
+                fontSize: 15,
+                textTransform: "none",
+                background: "linear-gradient(120deg, #0f2a4a, #2c5282)",
+                boxShadow: "none",
+                "&:hover": {
+                  background: "linear-gradient(120deg, #0f2a4a, #2c5282)",
+                  boxShadow: "0 4px 12px rgba(79,70,229,0.25)",
+                },
+                "&:disabled": {
+                  opacity: 0.7,
+                },
+              }}
+              disabled={loading}
             >
-              Sign up
-            </Link>
-          </Typography>
-        ) : (
-          <Typography variant="body1">
-            Already have an account?{" "}
-            <Link
-              component="button"
-              variant="body1"
-              onClick={switchToLogin}
-              sx={{ fontWeight: 600 }}
-            >
-              Sign in
-            </Link>
-          </Typography>
-        )}
-      </Box>
-    </Container>
+              {loading
+                ? "Please wait…"
+                : isLogin
+                ? "Sign in"
+                : "Create account"}
+            </Button>
+          </Box>
+
+          {/* Google + divider */}
+          <Divider sx={{ my: 3 }}>
+            <Typography variant="caption" color="text.secondary">
+              or continue with
+            </Typography>
+          </Divider>
+
+          <Box sx={{ display: "flex", justifyContent: "center" }}>
+            <GoogleLogin
+              onSuccess={async (credentialResponse) => {
+                try {
+                  const { data } = await axios.post(`${API_URL}/api/auth/google`, {
+                    credential: credentialResponse.credential,
+                  });
+                  login(data.token, data.user);
+                  window.location.href = "/";
+                } catch (err) {
+                  setError(err.response?.data?.message || "Google login failed");
+                }
+              }}
+              onError={() => setError("Google login failed")}
+              theme="outline"
+              size="large"
+              text={isLogin ? "signin_with" : "signup_with"}
+              shape="rectangular"
+              width="340"
+            />
+          </Box>
+        </Paper>
+      </Container>
+    </Box>
   );
 }
