@@ -2,63 +2,24 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Box, CircularProgress, Typography } from "@mui/material";
 import { useAuth } from "./context/AuthContext";
-import { useState, useEffect } from "react";
-import axios from "axios";
-// Pages
-import AuthPage from "./pages/AuthPage";
-import JobsList from "./pages/JobsList";
-import ApplyJobFlow from "./pages/ApplyJobFlow";
-import Dashboard from "./pages/Dashboard";
-import CreateJob from "./pages/CreateJob";
-import CandidateProfileForm from "./pages/CandidateProfileForm";
-import GoBackButton from "./GoBack";
-import EditJob from "./pages/EditJob";
-import Home from "./pages/Home"; // Import the Home component
-import MyApplications from "./pages/MyApplications"; // Import for new route
-import { Navbar } from "./components/Navbar"; // Import the new Navbar
+import { Navbar } from "./components/Navbar";
 import Footer from "./components/Footer";
-import InterviewerDashboard from "./pages/InterviewerDashboard";
-import EditCandidateProfile from "./pages/EditCandidateProfile";
+
+import AuthPage from "./pages/AuthPage";
+import ResumeUpload from "./pages/ResumeUpload";
+import Dashboard from "./pages/Dashboard";
+import TalentPool from "./pages/TalentPool";
+import CandidateDetail from "./pages/CandidateDetail";
+import OfferOnboarding from "./pages/OfferOnboarding";
 import RejectedCandidates from "./pages/RejectedCandidates";
-import CandidatesList from "./pages/CandidatesList";
-import JobApplicantsPage from "./pages/JobApplicantsPage";
 import InterviewAnalytics from "./pages/InterviewAnalytics";
-// import atsImg from './assets/ats_.png'
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export default function App() {
   const { user, loading } = useAuth();
-  const [hasProfile, setHasProfile] = useState(null); // null = checking
 
-  // Only check profile if candidate and logged in
-  useEffect(() => {
-    if (!user || user.role !== "candidate") {
-      setHasProfile(null);
-      return;
-    }
-
-    axios
-      .get(`${API_URL}/api/candidate/profile`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      })
-      .then(() => setHasProfile(true))
-      .catch((err) => setHasProfile(err.response?.status !== 404));
-  }, [user]);
-
-  // Show loading while checking auth
-  if (loading || (user?.role === "candidate" && hasProfile === null)) {
+  if (loading) {
     return (
-      <Box
-        sx={{
-          height: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flexDirection: "column",
-          gap: 2,
-          // backgroundImage:`url(${atsImg})`
-        }}
-      >
+      <Box sx={{ height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 2 }}>
         <CircularProgress size={60} />
         <Typography>Loading your session...</Typography>
       </Box>
@@ -66,126 +27,26 @@ export default function App() {
   }
 
   return (
-    <>
-      <BrowserRouter>
-        <Navbar />
-        {/* Added Navbar here - it conditionally renders based on auth */}
-        {/* MAIN CONTENT AREA - pushes footer down when tall */}
-        <Box>
-          {/* <GoBackButton /> */}
-          <Routes>
-            {/* Public */}
-            <Route
-              path="/login"
-              element={!user ? <AuthPage /> : <Navigate to="/" />}
-            />
-            {/* Home Route - Renders Home component, redirects if not authenticated */}
-            <Route
-              path="/"
-              element={user ? <Home /> : <Navigate to="/login" />}
-            />
-            {/* Candidate Routes */}
-            <Route
-              path="/jobs"
-              element={
-                user?.role === "candidate" ? (
-                  hasProfile ? (
-                    <JobsList />
-                  ) : (
-                    <CandidateProfileForm />
-                  )
-                ) : (
-                  <Navigate to="/login" />
-                )
-              }
-            />
-            <Route
-              path="/apply/:jobId"
-              element={
-                user?.role === "candidate" ? (
-                  <ApplyJobFlow />
-                ) : (
-                  <Navigate to="/login" />
-                )
-              }
-            />
-            {/* HM / Admin Routes */}
-            <Route
-              path="/dashboard"
-              element={
-                user && user.role !== "candidate" ? (
-                  <Dashboard />
-                ) : (
-                  <Navigate to="/login" />
-                )
-              }
-            />
-            {/* View Applicants for a Job - New Route */}
-            <Route
-  path="/job/:jobId/applicants"
-  element={<JobApplicantsPage />}
-/>
-            <Route
-              path="/create-job"
-              element={
-                user && user.role !== "candidate" ? (
-                  <CreateJob />
-                ) : (
-                  <Navigate to="/login" />
-                )
-              }
-            />
-            {/* Edit Job*/}
-            <Route
-              path="/edit/:jobId"
-              element={
-                user && user.role !== "candidate" ? (
-                  <EditJob />
-                ) : (
-                  <Navigate to="/login" />
-                )
-              }
-            />
-            {/* Candidate list page for HM and Admin */}
-            <Route
-              path="/candidates-list"
-              element={
-                user && user.role !== "candidate" ? (
-                  <CandidatesList />
-                ) : (
-                  <Navigate to="/login" />
-                )
-              }
-            />
-            {/* Edit Candidate Profile */}
-            <Route
-              path="/profile/edit"
-              element={<EditCandidateProfile user />}
-            />
-            {/* Go to My Appllication */}
-            <Route path="/my-applications" element={<MyApplications />} />
-            <Route path="*" element={<Navigate to="/" />} />
-            {/* for handling the interview */}
-            <Route
-              path="/interviewer-dashboard"
-              element={
-                user?.role === "interviewer" ? (
-                  <InterviewerDashboard />
-                ) : (
-                  <Navigate to="/login" />
-                )
-              }
-            />
-            <Route path="/rejected" element={<RejectedCandidates />} />
-            {/* Interview Analytics Route */}
-            <Route path="/interview-analytics" element={<InterviewAnalytics />} />
-          </Routes>
-          
-        </Box>
-        <Box>
-          <Footer />
-        </Box>
-      </BrowserRouter>
-    </>
+    <BrowserRouter>
+      <Navbar />
+      <Box>
+        <Routes>
+          {/* Public — no login needed */}
+          <Route path="/" element={<ResumeUpload />} />
+          <Route path="/login" element={!user ? <AuthPage /> : <Navigate to="/dashboard" />} />
+
+          {/* Hiring Manager only */}
+          <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/login" />} />
+          <Route path="/pool" element={user ? <TalentPool /> : <Navigate to="/login" />} />
+          <Route path="/candidate/:id" element={user ? <CandidateDetail /> : <Navigate to="/login" />} />
+          <Route path="/candidate/:id/offer" element={user ? <OfferOnboarding /> : <Navigate to="/login" />} />
+          <Route path="/rejected" element={user ? <RejectedCandidates /> : <Navigate to="/login" />} />
+          <Route path="/interview-analytics" element={user ? <InterviewAnalytics /> : <Navigate to="/login" />} />
+
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+      </Box>
+      <Footer />
+    </BrowserRouter>
   );
 }

@@ -1,577 +1,260 @@
-// backend/routes/interviews.js
-const User = require("../models/User");
-const { sendInterviewEmail } = require("../utils/emailService");
+// backend/src/routes/interviews.js
 const express = require("express");
 const router = express.Router();
 const Interview = require("../models/Interview");
-const Application = require("../models/Application");
-const { protect, authorize } = require("../middleware/auth");
+const Candidate = require("../models/Candidate");
+const { protect } = require("../middleware/auth");
+const { sendInterviewEmail } = require("../utils/emailService");
+const { createGoogleMeetEvent } = require("../utils/googleMeetService");
+const { nextRoundType, roundSequenceForTier, ROUND_LABELS } = require("../utils/tier");
 
-// Schedule Interview (HM/Admin only)
-// routes/interviews.js - POST /
-// ====================== SCHEDULE INTERVIEW WITH GOOGLE MEET ======================
-router.post(
-  "/",
-  protect,
-  authorize("hiring_manager", "admin"),
-  async (req, res) => {
-    const { applicationId, scheduledAt, interviewerId, round } = req.body;
+// ============================================================
+// SCHEDULE INTERVIEW  (auto-picks the next round type from tier
+// unless roundType is explicitly passed)
+// ============================================================
+router.post("/", protect, async (req, res) => {
+  try {
+    const { candidateId, scheduledAt, interviewerName, interviewerEmail, roundType } = req.body;
 
-    try {
-      // 1. Fetch application and job details
-      const app = await Application.findById(applicationId)
-        .populate("job")
-        .populate("candidate");
+    const candidate = await Candidate.findById(candidateId);
+    if (!candidate) return res.status(404).json({ message: "Candidate not found" });
 
-      if (!app) {
-        return res.status(404).json({ message: "Application not found" });
-      }
+    // Figure out which round types are already completed for this candidate
+    const completedInterviews = await Interview.find({
+      candidate: candidateId,
+      status: "completed",
+    });
+    const completedRoundTypes = completedInterviews.map((i) => i.roundType);
 
-      // 2. Your existing round validation logic (keep it as it is)
-      // Determine expected next round
-      // Find all interviews for this application, sorted by round ascending
-      console.log("applicationId for scheduling interview is ", applicationId);
-      const existingInterviews = await Interview.find({
-        application: applicationId,
-      }).sort({ round: 1 }); // ascending: 1, 2, 3...
-
-      // Determine the highest completed round
-      let highestCompletedRound = 0;
-      for (const intv of existingInterviews) {
-        if (intv.status === "completed") {
-          highestCompletedRound = Math.max(highestCompletedRound, intv.round);
-        }
-      }
-
-      // Next round should be highest completed + 1
-      const nextExpectedRound = highestCompletedRound + 1;
-
-      // Validate the requested round
-      if (round !== nextExpectedRound) {
-        return res.status(400).json({
-          message: `Invalid round. Please schedule round ${nextExpectedRound} next.`,
-        });
-      }
-
-      // Prevent scheduling a round that's already scheduled (but not completed)
-      const alreadyScheduled = await Interview.findOne({
-        application: applicationId,
-        round: nextExpectedRound,
-        status: "scheduled",
+    const expectedRound = nextRoundType(candidate.tier, completedRoundTypes);
+    if (!expectedRound) {
+      return res.status(400).json({
+        message: `${candidate.name} has already completed all rounds for the ${candidate.tier} tier.`,
       });
+    }
 
-      if (alreadyScheduled) {
-        return res.status(400).json({
-          success: false,
-          type: "ROUND_ALREADY_SCHEDULED",
-          message: `Round ${nextExpectedRound} is already scheduled.`,
-        });
-      }
-
-      // 3. Create Interview record
-      const interview = new Interview({
-        application: applicationId,
-        scheduledAt: new Date(scheduledAt),
-        interviewer: interviewerId,
-        round,
+    const finalRoundType = roundType || expectedRound;
+    if (finalRoundType !== expectedRound) {
+      return res.status(400).json({
+        message: `Invalid round. Next expected round for this candidate is "${ROUND_LABELS[expectedRound]}".`,
       });
-      await interview.save();
+    }
 
-      // 4. Create Google Meet Event
-      const { createGoogleMeetEvent } = require("../utils/googleMeetService");
-
-      const startTime = new Date(scheduledAt).toISOString();
-      const endTime = new Date(
-        new Date(scheduledAt).getTime() + 60 * 60 * 1000,
-      ).toISOString(); // 1 hour meeting
-
-      const candidateEmail = app.candidate?.email || app.parsedData?.email;
-      const interviewer = await User.findById(interviewerId);
-
-      const { meetingLink } = await createGoogleMeetEvent({
-        summary: `Interview: ${app.job.title} - Round ${round}`,
-        description: `Interview for position: ${app.job.title}`,
-        startTime,
-        endTime,
+    // Prevent double-scheduling the same round while one is already pending
+    const alreadyScheduled = await Interview.findOne({
+      candidate: candidateId,
+      roundType: finalRoundType,
+      status: "scheduled",
+    });
+    if (alreadyScheduled) {
+      return res.status(400).json({
+        success: false,
+        type: "ROUND_ALREADY_SCHEDULED",
+        message: `${ROUND_LABELS[finalRoundType]} is already scheduled for this candidate.`,
       });
+    }
 
-      // 5. Save meeting link to interview record
-      interview.meetingLink = meetingLink;
-      console.log("Saving interview with meeting link:", interview.meetingLink);
-      await interview.save();
+    const interview = new Interview({
+      candidate: candidateId,
+      roundType: finalRoundType,
+      scheduledAt: new Date(scheduledAt),
+      interviewerName,
+      interviewerEmail,
+    });
 
-      // 6. Prepare Email Content
-      const emailHTMLForCandidate = `
+    // Google Meet link
+    const startTime = new Date(scheduledAt).toISOString();
+    const endTime = new Date(new Date(scheduledAt).getTime() + 60 * 60 * 1000).toISOString();
+
+    const { meetingLink } = await createGoogleMeetEvent({
+      summary: `${ROUND_LABELS[finalRoundType]} - ${candidate.name}`,
+      description: `${ROUND_LABELS[finalRoundType]} interview for candidate ${candidate.name}`,
+      startTime,
+      endTime,
+    });
+    interview.meetingLink = meetingLink;
+    await interview.save();
+
+    // Move candidate status forward to reflect this round
+    candidate.status = `${finalRoundType}-round`;
+    await candidate.save();
+
+    // Emails
+    const emailHTMLForCandidate = `
       <h2>Interview Scheduled</h2>
-      <p><strong>Job Title:</strong> ${app.job.title}</p>
-      <p><strong>Round:</strong> ${round}</p>
+      <p><strong>Round:</strong> ${ROUND_LABELS[finalRoundType]}</p>
       <p><strong>Date & Time:</strong> ${new Date(scheduledAt).toLocaleString("en-IN")}</p>
-      <wrap>
-      <a href="${meetingLink}" 
-         target="_blank" 
-         style="background:#34a853;color:white;padding:14px 28px;text-decoration:none;border-radius:8px;font-weight:bold;">
-        Join Google Meet
-      </a>
-      <p>Please join 5 minutes early. The meeting link is valid only for this interview.</p>
-      <p>Best regards,<br><strong>HR Team, Prixgen Tech Solutions</strong></p>
-      </wrap>
+      <a href="${meetingLink}" target="_blank" style="background:#34a853;color:white;padding:14px 28px;text-decoration:none;border-radius:8px;font-weight:bold;">Join Google Meet</a>
+      <p>Please join 5 minutes early.</p>
+      <p>Best regards,<br><strong>Hiring Team</strong></p>
     `;
-
-      const emailHTMLForInterviewer = `
+    const emailHTMLForInterviewer = `
       <h2>New Interview Scheduled</h2>
-      <p><strong>Candidate:</strong> ${app.candidate?.name || app.parsedData?.name || "N/A"}</p>
-      <p><strong>Job Title:</strong> ${app.job.title}</p>
-      <p><strong>Round:</strong> ${round}</p>
+      <p><strong>Candidate:</strong> ${candidate.name}</p>
+      <p><strong>Round:</strong> ${ROUND_LABELS[finalRoundType]}</p>
       <p><strong>Date & Time:</strong> ${new Date(scheduledAt).toLocaleString("en-IN")}</p>
-      <wrap>
-      <a href="${meetingLink}" 
-         target="_blank" 
-         style="background:#34a853;color:white;padding:14px 28px;text-decoration:none;border-radius:8px;font-weight:bold;">
-        View Google Meet Link
-      </a>
-      <p>Please join 5 minutes early. The meeting link is valid only for this interview.</p>
-      <p>Best regards,<br><strong>HR Team, Prixgen Tech Solutions</strong></p>
-      </wrap>
+      <a href="${meetingLink}" target="_blank" style="background:#34a853;color:white;padding:14px 28px;text-decoration:none;border-radius:8px;font-weight:bold;">View Google Meet Link</a>
     `;
 
-      // 7. Send emails
-      if (candidateEmail) {
-        await sendInterviewEmail(
-          candidateEmail,
-          `Interview Scheduled - ${app.job.title}`,
-          emailHTMLForCandidate,
-        );
-      }
-      if (interviewer?.email) {
-        await sendInterviewEmail(
-          interviewer.email,
-          `You have an interview scheduled`,
-          emailHTMLForInterviewer,
-        );
-      }
-
-      res.status(201).json({
-        success: true,
-        message: "Interview scheduled successfully with Google Meet link",
-        meetingLink: meetingLink,
-      });
-    } catch (err) {
-      console.error("Interview scheduling error:", err);
-      res.status(500).json({
-        message: "Failed to schedule interview",
-        error: err.message,
-      });
+    if (candidate.email) {
+      await sendInterviewEmail(candidate.email, `Interview Scheduled - ${ROUND_LABELS[finalRoundType]}`, emailHTMLForCandidate);
     }
-  },
-);
-
-// Update (reschedule) interview - HM/Admin only
-router.put(
-  "/reschedule",
-  protect,
-  authorize("hiring_manager", "admin"),
-  async (req, res) => {
-    try {
-      const { applicationId, scheduledAt, interviewerId, round } = req.body;
-
-      // Check if the application exists
-      // 1. Fetch application and job details
-      const application = await Application.findById(applicationId)
-        .populate("job")
-        .populate("candidate");
-
-      if (!application) {
-        return res.status(404).json({ message: "Application not found" });
-      }
-
-      // Check if the interview exists
-      const interview = await Interview.findOne({
-        application: applicationId,
-        round,
-      });
-      if (!interview) {
-        return res.status(404).json({ message: "Interview not found" });
-      }
-
-      // //round validation logic (same as scheduling)
-      // const existingInterviews = await Interview.find({
-      //   application: applicationId,
-      // }).sort({ round: 1 });
-
-      // let highestCompletedRound = 0;
-      // for (const intv of existingInterviews) {
-      //   if (intv.status === "completed") {
-      //     highestCompletedRound = Math.max(highestCompletedRound, intv.round);
-      //   }
-      // }
-
-      // const nextExpectedRound = highestCompletedRound + 1;
-
-      // if (round !== nextExpectedRound) {
-      //   return res.status(400).json({
-      //     message: `Invalid round. Please reschedule round ${nextExpectedRound} next.`,
-      //   });
-      // }
-
-      // Update the interview details
-      interview.scheduledAt = new Date(scheduledAt);
-      interview.interviewer = interviewerId;
-      await interview.save();
-
-      //create new Google Meet link
-      const { createGoogleMeetEvent } = require("../utils/googleMeetService");
-
-      const startTime = new Date(scheduledAt).toISOString();
-      const endTime = new Date(
-        new Date(scheduledAt).getTime() + 60 * 60 * 1000,
-      ).toISOString(); // 1 hour meeting
-
-      const candidateEmail =
-        application.candidate?.email || application.parsedData?.email;
-      const interviewer = await User.findById(interviewerId);
-
-      const { meetingLink } = await createGoogleMeetEvent({
-        summary: `Rescheduled Interview: ${application.job.title} - Round ${round}`,
-        description: `Rescheduled interview for position: ${application.job.title}`,
-        startTime,
-        endTime,
-      });
-
-      // Update meeting link in interview record
-      interview.meetingLink = meetingLink;
-      await interview.save();
-
-      // Prepare Email Content
-      const emailHTMLForCandidate = `
-      <h2>Interview Scheduled for <p><strong> ${application.job.title}</strong></p></h2>
-     
-      <p><strong>Round:</strong> ${round}</p>
-      <p><strong>Date & Time:</strong> ${new Date(scheduledAt).toLocaleString("en-IN")}</p>
-      <br>
-      <a href="${meetingLink}" 
-         target="_blank" 
-         style="background:#34a853;color:white;padding:14px 28px;text-decoration:none;border-radius:8px;font-weight:bold;">
-        Join Google Meet
-      </a>
-      <p>Please join 5 minutes early. The meeting link is valid only for this interview.</p>
-      <p>Best regards,<br><strong>HR Team, Prixgen Tech Solutions</strong></p>
-    `;
-
-      const emailHTMLForInterviewer = `
-      <h2>New Interview Scheduled <p><strong>${application.job.title}</strong></p></h2>
-      <p><strong>Candidate:</strong> ${application.candidate?.name || app.parsedData?.name || "N/A"}</p>
-      <p><strong>Round:</strong> ${round}</p>
-      <p><strong>Date & Time:</strong> ${new Date(scheduledAt).toLocaleString("en-IN")}</p>
-      <br>
-      <a href="${meetingLink}" 
-         target="_blank" 
-         style="background:#34a853;color:white;padding:14px 28px;text-decoration:none;border-radius:8px;font-weight:bold;">
-        View Google Meet Link
-      </a>
-      <p>Please join 5 minutes early. The meeting link is valid only for this interview.</p>
-      <p>Best regards,<br><strong>HR Team, Prixgen Tech Solutions</strong></p>
-    `;
-
-      // Send emails about rescheduling
-      if (candidateEmail) {
-        await sendInterviewEmail(
-          candidateEmail,
-          `Interview Rescheduled - ${application.job.title}`,
-          emailHTMLForCandidate,
-        );
-      }
-      if (interviewer?.email) {
-        await sendInterviewEmail(
-          interviewer.email,
-          `Your interview has been rescheduled`,
-          emailHTMLForInterviewer,
-        );
-      }
-
-      res.json({ message: "Interview rescheduled successfully", interview });
-    } catch (err) {
-      console.error("Error rescheduling interview:", err);
-      res.status(500).json({
-        message: "Failed to reschedule interview",
-        error: err.message,
-      });
+    if (interviewerEmail) {
+      await sendInterviewEmail(interviewerEmail, `You have an interview scheduled`, emailHTMLForInterviewer);
     }
-  },
-);
 
-// routes/interviews.js - POST /:id/feedback
+    res.status(201).json({
+      success: true,
+      message: `${ROUND_LABELS[finalRoundType]} scheduled successfully`,
+      meetingLink,
+      interview,
+    });
+  } catch (err) {
+    console.error("Interview scheduling error:", err);
+    res.status(500).json({ message: "Failed to schedule interview", error: err.message });
+  }
+});
+
+// ============================================================
+// RESCHEDULE
+// ============================================================
+router.put("/:id/reschedule", protect, async (req, res) => {
+  try {
+    const { scheduledAt, interviewerName, interviewerEmail } = req.body;
+
+    const interview = await Interview.findById(req.params.id).populate("candidate");
+    if (!interview) return res.status(404).json({ message: "Interview not found" });
+
+    interview.scheduledAt = new Date(scheduledAt);
+    if (interviewerName) interview.interviewerName = interviewerName;
+    if (interviewerEmail) interview.interviewerEmail = interviewerEmail;
+
+    const startTime = new Date(scheduledAt).toISOString();
+    const endTime = new Date(new Date(scheduledAt).getTime() + 60 * 60 * 1000).toISOString();
+    const { meetingLink } = await createGoogleMeetEvent({
+      summary: `Rescheduled: ${ROUND_LABELS[interview.roundType]} - ${interview.candidate.name}`,
+      description: `Rescheduled interview`,
+      startTime,
+      endTime,
+    });
+    interview.meetingLink = meetingLink;
+    await interview.save();
+
+    const candidate = interview.candidate;
+    const emailHTML = `
+      <h2>Interview Rescheduled</h2>
+      <p><strong>Round:</strong> ${ROUND_LABELS[interview.roundType]}</p>
+      <p><strong>New Date & Time:</strong> ${new Date(scheduledAt).toLocaleString("en-IN")}</p>
+      <a href="${meetingLink}" target="_blank" style="background:#34a853;color:white;padding:14px 28px;text-decoration:none;border-radius:8px;font-weight:bold;">Join Google Meet</a>
+    `;
+    if (candidate?.email) {
+      await sendInterviewEmail(candidate.email, `Interview Rescheduled - ${ROUND_LABELS[interview.roundType]}`, emailHTML);
+    }
+
+    res.json({ message: "Interview rescheduled successfully", interview });
+  } catch (err) {
+    console.error("Error rescheduling interview:", err);
+    res.status(500).json({ message: "Failed to reschedule interview", error: err.message });
+  }
+});
+
+// ============================================================
+// SUBMIT FEEDBACK — auto-advances candidate status
+// ============================================================
 router.post("/:id/feedback", protect, async (req, res) => {
   try {
-    const interviewId = req.params.id;
-    const { rating, notes, recommendation, negotiatedSalary, noticePeriod } =
-      req.body;
-
+    const { rating, notes, recommendation, negotiatedSalary, noticePeriod } = req.body;
     if (!recommendation) {
       return res.status(400).json({ message: "Recommendation is required" });
     }
 
-    const interview = await Interview.findById(interviewId).populate({
-      path: "application",
-      populate: { path: "job" },
-    });
-
-    if (!interview)
-      return res.status(404).json({ message: "Interview not found" });
-
-    if (interview.interviewer.toString() !== req.user.id) {
-      return res.status(403).json({ message: "Unauthorized" });
-    }
-
+    const interview = await Interview.findById(req.params.id).populate("candidate");
+    if (!interview) return res.status(404).json({ message: "Interview not found" });
     if (interview.status === "completed") {
-      return res.status(400).json({ message: "Feedback already submitted" });
+      return res.status(400).json({ message: "Feedback already submitted for this round" });
     }
 
-    // Mark interview as completed
     interview.status = "completed";
-    interview.feedback = {
-      rating,
-      notes,
-      recommendation,
-      negotiatedSalary,
-      noticePeriod,
-      submittedBy: req.user.id,
-      submittedAt: new Date(),
-    };
+    interview.feedback = { rating, notes, recommendation, negotiatedSalary, noticePeriod };
+    interview.feedbackAt = new Date();
     await interview.save();
 
-    const app = interview.application;
+    const candidate = interview.candidate;
 
-    // Progress application based on recommendation and current round
-    if (recommendation === "next-round") {
-      if (interview.round === 1) {
-        app.status = "second-round";
-      } else if (interview.round === 2) {
-        app.status = "final-round";
-      }
-      // If already in final-round, stay there or auto-schedule next if needed
-    } else if (recommendation === "hire") {
-      app.status = "offered"; // or 'hired' if you prefer
-    } else if (recommendation === "reject") {
-      app.status = "rejected";
+    if (recommendation === "reject") {
+      candidate.status = "rejected";
+    } else if (recommendation === "hold") {
+      candidate.status = "on-hold";
+    } else if (recommendation === "next-round" || recommendation === "hire") {
+      const completedInterviews = await Interview.find({
+        candidate: candidate._id,
+        status: "completed",
+      });
+      const completedRoundTypes = completedInterviews.map((i) => i.roundType);
+      const upcoming = nextRoundType(candidate.tier, completedRoundTypes);
+
+      candidate.status = upcoming ? `${upcoming}-round` : "final-evaluation";
     }
-    // "hold" → no status change
-
-    await app.save();
+    await candidate.save();
 
     res.json({
       message: "Feedback submitted and candidate progressed",
       interview,
-      applicationStatus: app.status,
+      candidateStatus: candidate.status,
     });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 });
-// Get all interviews for a candidate (for interviewer dashboard)
-router.get("/my-interviews", protect, async (req, res) => {
+
+// ============================================================
+// GET all interviews for one candidate (timeline view)
+// ============================================================
+router.get("/candidate/:candidateId", protect, async (req, res) => {
   try {
-    const interviews = await Interview.find({ interviewer: req.user.id })
-      .populate("application", "resumeUrl")
-      .populate({
-        path: "application",
-        populate: { path: "candidate", select: "name email" },
-      })
-      .populate({
-        path: "application",
-        populate: { path: "job", select: "title" },
-      });
-
-    res.json(interviews);
-    console.log("interviews are ", interviews);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-// GET MY INTERVIEWS — Only for interviewer role
-router.get("/my", protect, async (req, res) => {
-  try {
-    const interviews = await Interview.find({ interviewer: req.user.id })
-      .populate({
-        path: "application",
-        populate: [
-          { path: "candidate", select: "name email" },
-          { path: "job", select: "title" },
-        ],
-      })
-      .sort({ scheduledAt: -1 });
-
+    const interviews = await Interview.find({ candidate: req.params.candidateId }).sort({ scheduledAt: 1 });
     res.json(interviews);
   } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-// GET MY INTERVIEWS AS CANDIDATE
-router.get("/candidate/my", protect, async (req, res) => {
-  try {
-    // Find applications belonging to this candidate
-    console.log("inside fetching scheduled interview details");
-
-    const applications = await Application.find({
-      candidate: req.user.id,
-    }).select("_id");
-
-    const applicationIds = applications.map((app) => app._id);
-
-    const interviews = await Interview.find({
-      application: { $in: applicationIds },
-    })
-      .populate("interviewer", "name")
-      .populate("application", null)
-      .populate({
-        path: "application",
-        populate: { path: "job", select: "title" },
-      })
-      .sort({ scheduledAt: 1 });
-
-    res.json(interviews);
-    console.log("==>", interviews);
-  } catch (err) {
-    console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 });
 
-// GET all users who can take interviews
-router.get(
-  "/interviewers",
-  protect,
-  authorize("hiring_manager", "admin"),
-  async (req, res) => {
-    try {
-      console.log("inside interviews route backend test===");
-      const users = await User.find({
-        role: { $in: ["interviewer"] },
-      }).select("name");
+// ============================================================
+// GET rejected candidates (via interview feedback)
+// ============================================================
+router.get("/rejected", protect, async (req, res) => {
+  try {
+    const rejectedInterviews = await Interview.find({
+      "feedback.recommendation": { $regex: /^reject$/i },
+    })
+      .populate("candidate", "name email tier skills")
+      .sort({ updatedAt: -1 })
+      .lean();
 
-      res.json(users);
-      console.log(users);
-    } catch (err) {
-      res.status(500).json({ message: "Server error" });
-    }
-  },
-);
+    const results = rejectedInterviews.map((interview) => ({
+      _id: interview._id,
+      candidate: interview.candidate,
+      roundType: interview.roundType,
+      scheduledAt: interview.scheduledAt,
+      feedback: interview.feedback,
+    }));
 
-// GET interview for a specific application
-router.get(
-  "/application/:applicationId",
-  protect,
-  authorize("admin", "hiring_manager", "candidate"),
-  async (req, res) => {
-    try {
-      const { applicationId } = req.params;
-      console.log("applicationID is ", applicationId);
+    res.json(results);
+  } catch (err) {
+    console.error("Error fetching rejected candidates:", err);
+    res.status(500).json({ message: "Server error while fetching rejected candidates" });
+  }
+});
 
-      const interview = await Interview.find({
-        application: req.params.applicationId,
-      })
-        .populate("interviewer", "name")
-        .populate({
-          path: "application",
-          populate: { path: "job", select: "title" },
-        });
-
-      if (!interview) {
-        return res.status(404).json({ message: "No interview found" });
-      }
-
-      // Security: Only candidate of this application can see
-      const application = await Application.findById(req.params.applicationId);
-      console.log("inside view details route", application);
-
-      console.log("user id is ", req.user.id);
-
-      // if (application.candidate.toString() !== req.user.id) {
-      //   return res.status(403).json({ message: 'Not authorized' });
-      // }
-
-      res.json(interview);
-      console.log("interview details are ==>>>>>>", interview);
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ message: "Server error" });
-    }
-  },
-);
-
-// Get all rejected candidates (where feedback recommendation is "reject")
-router.get(
-  "/rejected",
-  protect,
-  authorize("hiring_manager", "admin"),
-  async (req, res) => {
-    try {
-      console.log("Fetching rejected applications...");
-
-      const rejectedInterviews = await Interview.find({
-        "feedback.recommendation": { $regex: /^reject$/i }, // Matches "reject" or "Reject"
-      })
-        .populate({
-          path: "application",
-          populate: [
-            { path: "candidate", select: "name email" },
-            { path: "job", select: "title department" },
-          ],
-        })
-        .populate("feedbackBy", "name") // optional: interviewer name
-        .sort({ updatedAt: -1 })
-        .lean(); // improves performance
-
-      // Transform data to match what frontend expects
-      const applications = rejectedInterviews.map((interview) => {
-        const app = interview.application;
-        return {
-          _id: interview._id,
-          candidate: {
-            name: app?.parsedData?.name || app?.candidate?.name,
-            email: app?.parsedData?.email || app?.candidate?.email,
-          },
-          job: {
-            title: app?.job?.title || "Unknown Job",
-            department: app?.job?.department || "N/A",
-          },
-          appliedAt: app?.createdAt || interview.createdAt,
-          resumeUrl: app?.resumeUrl || "", // assuming resumeUrl is on application
-          status: interview.status,
-          feedback: interview.feedback, // optional: if you want to show notes/rating
-        };
-      });
-
-      res.status(200).json(applications);
-    } catch (err) {
-      console.error("Error fetching rejected candidates:", err);
-      res
-        .status(500)
-        .json({ message: "Server error while fetching rejected candidates" });
-    }
-  },
-);
-
-// Fetch all interviews (Admin/HM only) - for analytics dashboard
-router.get("/", protect, authorize("admin", "hiring_manager"), async (req, res) => {
+// ============================================================
+// GET all interviews (analytics dashboard)
+// ============================================================
+router.get("/", protect, async (req, res) => {
   try {
     const interviews = await Interview.find()
-      .populate({
-        path: "application",                    // Populate Application
-        select: "job candidate parsedData status",   // Select what you need
-        populate: [
-          {
-            path: "job",                        // Nested: Populate Job inside Application
-            select: "title",                    // Only need job title
-          },
-        ]
-      })
-      .select("status scheduledAt feedback") // Select only necessary fields from Interview
-      .populate("interviewer", "name email")
+      .populate("candidate", "name email tier status")
       .sort({ scheduledAt: -1 });
-
     res.json(interviews);
   } catch (err) {
     res.status(500).json({ message: "Server error" });

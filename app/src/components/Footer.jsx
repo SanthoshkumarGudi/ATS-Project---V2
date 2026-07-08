@@ -44,7 +44,7 @@ const Footer = () => {
           sx={{ textAlign: { xs: "center", sm: "left" } }}
         >
           <Typography variant="body2" sx={{ opacity: 0.9 }}>
-            © {new Date().getFullYear()} <strong>Karmiq</strong> • All Rights
+            © {new Date().getFullYear()} <strong>Prixgen</strong> • All Rights
             Reserved
           </Typography>
 

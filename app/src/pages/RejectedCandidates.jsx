@@ -1,148 +1,42 @@
 // src/pages/RejectedCandidates.jsx
 import { useEffect, useState } from "react";
-import {
-  Container,
-  Typography,
-  Card,
-  CardContent,
-  Box,
-  Chip,
-  Button,
-  Grid,
-  Avatar,
-} from "@mui/material";
-import { Download, Person } from "@mui/icons-material";
-import axios from "axios";
-import { useAuth } from "../context/AuthContext";
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+import { Container, Typography, Paper, Stack, Chip, Box, CircularProgress } from "@mui/material";
+import axios from "../utils/api";
+
+const ROUND_LABELS = { tech: "Tech Round", manager: "Manager Round", hr: "HR Round" };
 
 export default function RejectedCandidates() {
-  const { user } = useAuth();
-  const [applications, setApplications] = useState([]);
+  const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // If not logged in or not authorized role, stop loading
-    if (!user || !["admin", "hiring_manager"].includes(user.role)) {
-      setLoading(false);
-      return;
-    }
+    axios.get("/interviews/rejected").then((res) => setRows(res.data)).finally(() => setLoading(false));
+  }, []);
 
-    axios
-      .get(`${API_URL}/api/interviews/rejected`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      })
-      .then((res) => {
-        setApplications(res.data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error(err);
-        alert("Failed to load rejected candidates");
-        setLoading(false);
-      });
-  }, [user]);
-
-  // Loading state
-  if (loading) {
-    return (
-      <Typography align="center" sx={{ mt: 8 }}>
-        Loading...
-      </Typography>
-    );
-  }
-
-  // Unauthorized access
-  if (!user || !["admin", "hiring_manager"].includes(user.role)) {
-    return (
-      <Container maxWidth="lg" sx={{ py: 6 }}>
-        <Typography variant="h5" color="error" align="center">
-          You are not authorized to view this page..
-        </Typography>
-      </Container>
-    );
-  }
+  if (loading) return <Box sx={{ display: "flex", justifyContent: "center", py: 10 }}><CircularProgress /></Box>;
 
   return (
-    <Container maxWidth="lg" sx={{ py: 6 }}>
-      <Typography
-        variant="h3"
-        fontWeight="bold"
-        align="center"
-        gutterBottom
-        color="error.main"
-      >
-        Rejected Candidates
-      </Typography>
-
-      {applications.length === 0 ? (
-        <Typography align="center" sx={{ mt: 8, fontStyle: "italic" }}>
-          No rejected candidates yet.
-        </Typography>
+    <Container maxWidth="md" sx={{ py: 5 }}>
+      <Typography variant="h4" fontWeight={800} gutterBottom>Rejected Candidates</Typography>
+      {rows.length === 0 ? (
+        <Typography color="text.secondary">No rejections yet.</Typography>
       ) : (
-        applications.map((app) => (
-          <Card key={app._id} sx={{ mb: 4, borderRadius: 3, boxShadow: 3 }}>
-            <CardContent>
-              <Grid container spacing={3}>
-                <Grid item xs={12} md={8}>
-                  <Box display="flex" alignItems="center" gap={2} mb={2}>
-                    <Avatar>
-                      <Person />
-                    </Avatar>
-                    <Box>
-                      <Typography variant="h6">
-                        {app.candidate?.name || "Unknown"}
-                      </Typography>
-                      <Typography color="text.secondary">
-                        {app.candidate?.email || "No email"}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Grid>
-
-                <Grid
-                  item
-                  xs={12}
-                  md={4}
-                  sx={{ textAlign: { xs: "left", md: "right" } }}
-                >
-                  <Chip label="REJECTED" color="error" />
-                </Grid>
-              </Grid>
-
-              <Typography variant="body1" fontWeight="600" sx={{ mt: 2 }}>
-                Applied for: {app.job?.title || "Unknown Job"} (
-                {app.job?.department || "N/A"})
-              </Typography>
-
-              <Typography color="text.secondary" sx={{ mt: 1 }}>
-                Applied on: {new Date(app.appliedAt).toLocaleDateString()}
-              </Typography>
-              <Typography>Feedback Details</Typography>
-              <Typography>
-                <strong>Ratings: </strong>
-                {app.feedback.rating}
-              </Typography>
-              <Typography>
-                <strong>Overview: </strong>
-                {app.feedback.notes}
-              </Typography>
-
-              <Box sx={{ mt: 3 }}>
-                <Button
-                  variant="outlined"
-                  startIcon={<Download />}
-                  href={app.resumeUrl || "#"}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  disabled={!app.resumeUrl}
-                >
-                  Download Resume
-                </Button>
-              </Box>
-            </CardContent>
-          </Card>
-        ))
+        <Stack spacing={2} sx={{ mt: 3 }}>
+          {rows.map((r) => (
+            <Paper key={r._id} sx={{ p: 3 }}>
+              <Stack direction="row" justifyContent="space-between" flexWrap="wrap">
+                <Box>
+                  <Typography fontWeight={700}>{r.candidate?.name}</Typography>
+                  <Typography variant="body2" color="text.secondary">{r.candidate?.email}</Typography>
+                </Box>
+                <Chip label={ROUND_LABELS[r.roundType]} size="small" />
+              </Stack>
+              {r.feedback?.notes && (
+                <Typography variant="body2" sx={{ mt: 1 }} color="text.secondary">{r.feedback.notes}</Typography>
+              )}
+            </Paper>
+          ))}
+        </Stack>
       )}
     </Container>
   );

@@ -268,28 +268,7 @@ export default function AuthPage() {
               }}
             />
 
-            {/* Role — register only */}
-            {!isLogin && (
-              <FormControl fullWidth margin="normal">
-                <InputLabel>Role</InputLabel>
-                <Select
-                  name="role"
-                  value={formData.role}
-                  onChange={handleChange}
-                  label="Role"
-                  startAdornment={
-                    <InputAdornment position="start">
-                      <Briefcase size={18} color="var(--mui-palette-text-secondary, #6b7280)" />
-                    </InputAdornment>
-                  }
-                >
-                  <MenuItem value="candidate">Candidate</MenuItem>
-                  <MenuItem value="hiring_manager">Hiring Manager</MenuItem>
-                  <MenuItem value="interviewer">Interviewer</MenuItem>
-                  <MenuItem value="admin">Admin</MenuItem>
-                </Select>
-              </FormControl>
-            )}
+           
 
             <Button
               type="submit"

@@ -1,9 +1,10 @@
+// backend/src/routes/auth.js
 const express = require("express");
 const router = express.Router();
 const User = require("../models/User");
-const { authorize } = require("../middleware/auth");
+const { protect } = require("../middleware/auth");
 
-router.get("/me", authorize, async (req, res) => {
+router.get("/me", protect, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-password");
     res.json(user);
@@ -11,3 +12,5 @@ router.get("/me", authorize, async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+
+module.exports = router;

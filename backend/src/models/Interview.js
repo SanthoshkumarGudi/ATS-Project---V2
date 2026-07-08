@@ -1,27 +1,27 @@
-// backend/models/Interview.js
+// backend/src/models/Interview.js
 const mongoose = require("mongoose");
 
 const interviewSchema = new mongoose.Schema(
   {
-    application: {
+    candidate: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Application",
+      ref: "Candidate",
       required: true,
     },
-    round: { type: Number, default: 1 }, // 1=Technical, 2=HR, etc.
+    roundType: {
+      type: String,
+      enum: ["tech", "manager", "hr"],
+      required: true,
+    },
     scheduledAt: { type: Date, required: true },
-    // interviewer: { type: String, ref: 'User', required: true },
-    interviewer: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
+    interviewerName: { type: String, required: true }, // free text — no login needed
+    interviewerEmail: { type: String }, // optional, only used to send a notification
     status: {
       type: String,
       enum: ["scheduled", "completed", "cancelled", "no-show"],
       default: "scheduled",
     },
-    meetingLink: String, // Google Meet link
+    meetingLink: String,
     feedback: {
       rating: { type: Number, min: 1, max: 5 },
       notes: String,
@@ -32,7 +32,6 @@ const interviewSchema = new mongoose.Schema(
       negotiatedSalary: { type: String },
       noticePeriod: { type: String },
     },
-    feedbackBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     feedbackAt: Date,
   },
   { timestamps: true },

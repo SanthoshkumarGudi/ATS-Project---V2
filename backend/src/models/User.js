@@ -1,3 +1,4 @@
+// backend/src/models/User.js
 const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema({
@@ -6,8 +7,8 @@ const userSchema = new mongoose.Schema({
   password: String,
   role: {
     type: String,
-    enum: ["admin", "hiring_manager", "candidate", "interviewer"],
-    default: "candidate",
+    enum: ["hiring_manager"],
+    default: "hiring_manager",
   },
 });
 
