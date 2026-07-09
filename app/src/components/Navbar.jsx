@@ -19,7 +19,9 @@ export const Navbar = () => {
 
   const navItems = [
     { label: "Dashboard", path: "/dashboard" },
+    { label: "Share QR", path: "/qr" },
     { label: "Talent Pool", path: "/pool" },
+    { label: "Internal Portal", path: "/internal-portal" },
     { label: "Rejected", path: "/rejected" },
     { label: "Interview Analytics", path: "/interview-analytics" },
     { label: "Logout", onClick: () => logout(), isLogout: true },

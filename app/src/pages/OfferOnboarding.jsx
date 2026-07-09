@@ -3,9 +3,10 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Container, Paper, Typography, Stack, Checkbox, FormControlLabel,
-  TextField, Button, CircularProgress, Box,
+  TextField, Button, CircularProgress, Box, Alert,
 } from "@mui/material";
 import axios from "../utils/api";
+import CompleteOnboardingModal from "../components/CompleteOnboardingModal";
 
 export default function OfferOnboarding() {
   const { id } = useParams();
@@ -13,6 +14,7 @@ export default function OfferOnboarding() {
   const [candidate, setCandidate] = useState(null);
   const [loading, setLoading] = useState(true);
   const [onboardingDate, setOnboardingDate] = useState("");
+  const [completeModalOpen, setCompleteModalOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -37,7 +39,7 @@ export default function OfferOnboarding() {
     load();
   };
   const saveOnboardingDate = async () => {
-    await axios.patch(`/candidates/${id}/offer`, { onboardingDate, status: "onboarding" });
+    await axios.patch(`/candidates/${id}/offer`, { onboardingDate });
     load();
   };
 
@@ -45,12 +47,20 @@ export default function OfferOnboarding() {
     return <Box sx={{ display: "flex", justifyContent: "center", py: 10 }}><CircularProgress /></Box>;
   }
 
+  const readyToComplete = candidate.onboarding?.documentsCollected && candidate.onboarding?.onboardingDate;
+
   return (
     <Container maxWidth="sm" sx={{ py: 5 }}>
       <Button onClick={() => navigate(`/candidate/${id}`)} sx={{ mb: 2, textTransform: "none" }}>&larr; Back to candidate</Button>
       <Paper sx={{ p: 4 }}>
         <Typography variant="h5" fontWeight={800} gutterBottom>Offer & Pre-Onboarding — {candidate.name}</Typography>
         <Typography color="text.secondary" sx={{ mb: 3 }}>Current status: {candidate.status}</Typography>
+
+        {candidate.convertedToEmployee && (
+          <Alert severity="success" sx={{ mb: 3 }}>
+            This candidate has already been added to the Internal Portal as an employee.
+          </Alert>
+        )}
 
         <Stack spacing={2}>
           <Button
@@ -74,6 +84,7 @@ export default function OfferOnboarding() {
               <Checkbox
                 checked={!!candidate.onboarding?.documentsCollected}
                 onChange={(e) => toggleDocuments(e.target.checked)}
+                disabled={candidate.convertedToEmployee}
               />
             }
             label="Documents collected"
@@ -85,12 +96,34 @@ export default function OfferOnboarding() {
             InputLabelProps={{ shrink: true }}
             value={onboardingDate}
             onChange={(e) => setOnboardingDate(e.target.value)}
+            disabled={candidate.convertedToEmployee}
           />
-          <Button variant="contained" onClick={saveOnboardingDate} disabled={!onboardingDate}>
-            Save & Mark Onboarding
+          <Button variant="outlined" onClick={saveOnboardingDate} disabled={!onboardingDate || candidate.convertedToEmployee}>
+            Save Onboarding Date
           </Button>
+
+          <Button
+            variant="contained"
+            color="success"
+            disabled={!readyToComplete || candidate.convertedToEmployee}
+            onClick={() => setCompleteModalOpen(true)}
+          >
+            Complete Onboarding & Add to Internal Portal
+          </Button>
+          {!readyToComplete && !candidate.convertedToEmployee && (
+            <Typography variant="caption" color="text.secondary">
+              Collect documents and set an onboarding date to enable this.
+            </Typography>
+          )}
         </Stack>
       </Paper>
+
+      <CompleteOnboardingModal
+        open={completeModalOpen}
+        onClose={() => setCompleteModalOpen(false)}
+        candidate={candidate}
+        onSuccess={load}
+      />
     </Container>
   );
 }

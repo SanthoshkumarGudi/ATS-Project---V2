@@ -2,7 +2,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Box, CircularProgress, Typography } from "@mui/material";
 import { useAuth } from "./context/AuthContext";
-import { Navbar } from "./components/Navbar";
+import DashboardLayout from "./layouts/DashboardLayout";
 import Footer from "./components/Footer";
 
 import AuthPage from "./pages/AuthPage";
@@ -13,6 +13,21 @@ import CandidateDetail from "./pages/CandidateDetail";
 import OfferOnboarding from "./pages/OfferOnboarding";
 import RejectedCandidates from "./pages/RejectedCandidates";
 import InterviewAnalytics from "./pages/InterviewAnalytics";
+import InternalPortal from "./pages/InternalPortal";
+import ShareQR from "./pages/ShareQR";
+
+function PublicPage({ children }) {
+  return (
+    <>
+      {children}
+      <Footer />
+    </>
+  );
+}
+
+function ProtectedLayout({ user }) {
+  return user ? <DashboardLayout /> : <Navigate to="/login" />;
+}
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -28,25 +43,25 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <Navbar />
-      <Box>
-        <Routes>
-          {/* Public — no login needed */}
-          <Route path="/" element={<ResumeUpload />} />
-          <Route path="/login" element={!user ? <AuthPage /> : <Navigate to="/dashboard" />} />
+      <Routes>
+        {/* Public — no login needed */}
+        <Route path="/" element={<PublicPage><ResumeUpload /></PublicPage>} />
+        <Route path="/login" element={!user ? <PublicPage><AuthPage /></PublicPage> : <Navigate to="/dashboard" />} />
 
-          {/* Hiring Manager only */}
-          <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/login" />} />
-          <Route path="/pool" element={user ? <TalentPool /> : <Navigate to="/login" />} />
-          <Route path="/candidate/:id" element={user ? <CandidateDetail /> : <Navigate to="/login" />} />
-          <Route path="/candidate/:id/offer" element={user ? <OfferOnboarding /> : <Navigate to="/login" />} />
-          <Route path="/rejected" element={user ? <RejectedCandidates /> : <Navigate to="/login" />} />
-          <Route path="/interview-analytics" element={user ? <InterviewAnalytics /> : <Navigate to="/login" />} />
+        {/* Hiring Manager area — all share the sidebar/topbar shell */}
+        <Route element={<ProtectedLayout user={user} />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/pool" element={<TalentPool />} />
+          <Route path="/candidate/:id" element={<CandidateDetail />} />
+          <Route path="/candidate/:id/offer" element={<OfferOnboarding />} />
+          <Route path="/rejected" element={<RejectedCandidates />} />
+          <Route path="/interview-analytics" element={<InterviewAnalytics />} />
+          <Route path="/internal-portal" element={<InternalPortal />} />
+          <Route path="/qr" element={<ShareQR />} />
+        </Route>
 
-          <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
-      </Box>
-      <Footer />
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
     </BrowserRouter>
   );
 }

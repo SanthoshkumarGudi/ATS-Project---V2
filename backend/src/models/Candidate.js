@@ -50,6 +50,9 @@ const candidateSchema = new mongoose.Schema(
       documentsCollected: { type: Boolean, default: false },
       onboardingDate: Date,
     },
+
+    convertedToEmployee: { type: Boolean, default: false },
+    employeeId: { type: mongoose.Schema.Types.ObjectId, ref: "Employee", default: null },
   },
   { timestamps: true },
 );

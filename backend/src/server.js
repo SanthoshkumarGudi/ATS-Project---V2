@@ -11,7 +11,7 @@ const app = express();
 
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://ats-frontend-pzdc.onrender.com"],
+    origin: ["http://localhost:5173", "https://ats-frontend-pzdc.onrender.com", "http://localhost:5174"],
     credentials: true,
   }),
 );
@@ -34,6 +34,7 @@ app.use("/api/resumes", require("./routes/resumes"));       // public upload
 app.use("/api/candidates", require("./routes/candidates")); // talent pool (protected)
 app.use("/api/interviews", require("./routes/interviews")); // protected
 app.use("/api/auth", require("./routes/auth"));              // protected /me
+app.use("/api/employees", require("./routes/employees")); // internal directory (protected)
 
 // ==================== REGISTER (creates a Hiring Manager account) ====================
 app.post("/api/register", async (req, res) => {

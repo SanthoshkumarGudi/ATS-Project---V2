@@ -100,7 +100,18 @@ export default function CandidateDetail() {
         <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ gap: 1 }}>
           {(candidate.skills || []).map((s) => <Chip key={s} label={s} size="small" />)}
         </Stack>
-
+        {["summary", "experience", "education", "projects", "certifications"].map((key) =>
+          candidate.sections?.[key] ? (
+            <Box key={key} sx={{ mt: 3 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ textTransform: "capitalize", mb: 0.5 }}>
+                {key}
+              </Typography>
+              <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>
+                {candidate.sections[key]}
+              </Typography>
+            </Box>
+          ) : null
+        )}
         {candidate.status === "new" && (
           <Button variant="contained" sx={{ mt: 3 }} onClick={() => updateStatus("shortlisted")}>
             Shortlist Candidate
