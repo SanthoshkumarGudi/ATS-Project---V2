@@ -10,7 +10,7 @@ const interviewSchema = new mongoose.Schema(
     },
     roundType: {
       type: String,
-      enum: ["tech", "manager", "hr"],
+      enum: ["tech", "manager", "hr"],   // can be extended in the future
       required: true,
     },
     scheduledAt: { type: Date, required: true },

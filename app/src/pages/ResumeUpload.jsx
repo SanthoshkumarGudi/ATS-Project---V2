@@ -91,7 +91,7 @@ export default function ResumeUpload() {
           {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>{error}</Alert>}
 
           <Box component="form" onSubmit={handleSubmit}>
-            <TextField fullWidth label="Full name (optional)" name="name" value={form.name} onChange={handleChange} margin="normal" />
+            <TextField fullWidth label="Full name" name="name" value={form.name} onChange={handleChange} margin="normal" required/>
             <TextField fullWidth label="Email (optional)" name="email" type="email" value={form.email} onChange={handleChange} margin="normal" />
             <TextField fullWidth label="Phone (optional)" name="phone" value={form.phone} onChange={handleChange} margin="normal" />
 

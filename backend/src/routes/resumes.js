@@ -19,6 +19,7 @@ router.post("/upload", upload.single("resume"), async (req, res) => {
     const parsed = await parseResumeFromUrl(resumeUrl);
 
     const name = req.body.name || parsed.name || "Unknown";
+    console.log("name is ", name)
     const email = req.body.email || parsed.email || "";
     const phone = req.body.phone || parsed.phone || "";
     const tier = computeTier(parsed.experienceYears);

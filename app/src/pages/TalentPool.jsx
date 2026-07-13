@@ -31,6 +31,7 @@ export default function TalentPool() {
   const [q, setQ] = useState("");
   const [tier, setTier] = useState("");
   const [status, setStatus] = useState("");
+  const [error, setError] = useState("");
 
   const fetchCandidates = useCallback(async () => {
     setLoading(true);
@@ -42,7 +43,8 @@ export default function TalentPool() {
       const { data } = await axios.get("/candidates", { params });
       setCandidates(data);
     } catch (err) {
-      console.error(err);
+      console.error("Error fetching candidates:", err);
+      setError(err.response?.data?.message || "Something went wrong");
     } finally {
       setLoading(false);
     }
@@ -84,8 +86,12 @@ export default function TalentPool() {
         </TextField>
       </Stack>
 
-      {loading ? (
+      {loading&& !error ? (
         <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}><CircularProgress /></Box>
+      ) : error ? (
+        <Typography color="error" sx={{ textAlign: "center", py: 8 }}>
+          {error}
+        </Typography>
       ) : candidates.length === 0 ? (
         <Typography color="text.secondary" sx={{ textAlign: "center", py: 8 }}>
           No candidates match these filters yet.

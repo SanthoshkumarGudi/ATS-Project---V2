@@ -54,9 +54,8 @@ export default function DashboardLayout() {
   return (
     <Box sx={{ display: "flex", minHeight: "100vh", bgcolor: colors.bg }}>
       {/* SIDEBAR */}
-      <Box sx={{ width: 240, bgcolor: colors.navy, flexShrink: 0, py: 3.25, display: "flex", flexDirection: "column" }}>
+      <Box sx={{ width: 240, bgcolor: colors.navy, flexShrink: 0, py: 3.25, display: "flex", flexDirection: "column" , borderRadius: "10px 0 0 10px"}}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, mx: 2.75, mb: 4 }}>
-          <Box sx={{ width: 34, height: 34, borderRadius: "9px", bgcolor: colors.teal, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 900, fontSize: 15 }}>P</Box>
           <Typography sx={{ color: "#fff", fontWeight: 800, fontSize: 16, letterSpacing: 0.3 }}>Prixgen ATS</Typography>
         </Box>
 
