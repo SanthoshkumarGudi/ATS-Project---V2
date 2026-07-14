@@ -1,128 +1,47 @@
 // src/components/InterviewSchedulerModal.jsx
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
-  Modal,
-  Box,
-  Button,
-  TextField,
-  MenuItem,
-  Typography,
-  CircularProgress,
-  Dialog,
+  Modal, Box, Button, TextField, Typography, CircularProgress,
 } from "@mui/material";
-import axios from "axios";
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+import axios from "../utils/api";
 
-export default function InterviewSchedulerModal({
-  open,
-  onClose,
-  application,
-  reScheduleInterview
-}) {
+const ROUND_LABELS = { tech: "Tech Round", manager: "Manager Round", hr: "HR Round" };
+
+export default function InterviewSchedulerModal({ open, onClose, candidate, expectedRoundType, reschedule, interviewId, onSuccess }) {
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
-  const [interviewerId, setInterviewerId] = useState("");
-  const [interviewers, setInterviewers] = useState([]);
+  const [interviewerName, setInterviewerName] = useState("");
+  const [interviewerEmail, setInterviewerEmail] = useState("");
   const [loading, setLoading] = useState(false);
-
-  // Fetch interviewers when modal opens
-  useEffect(() => {
-    if (!open) return;
-
-    const fetchInterviewers = async () => {
-      setLoading(true);
-      try {
-        console.log("inside fetching interviwers frontend");
-        const res = await axios.get(`${API_URL}/api/interviews/interviewers`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        });
-        setInterviewers(res.data); // Expected: [{ _id, name }]
-      } catch (err) {
-        console.error("Failed to load interviewers");
-        alert("Could not load interviewers");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchInterviewers();
-  }, [open]);
-
-  var round;
-  if (application.status === "second-round") {
-    round = 2;
-  } else if (application.status === "final-round") {
-    round = 3;
-  } else {
-    round = 1;
-  }
-
-  console.log("status round is", round);
+  const [error, setError] = useState("");
 
   const handleSubmit = async () => {
-    if (!date || !time || !interviewerId) {
-      alert("Please fill all fields");
+    if (!date || !time || !interviewerName) {
+      setError("Please fill in date, time, and interviewer name.");
       return;
     }
-
-    if(reScheduleInterview){
-      try{
-        setLoading(true);
-
-        await axios.put(
-          `${API_URL}/api/interviews/reschedule`,
-          {
-            applicationId: application._id,
-            scheduledAt: new Date(`${date}T${time}`),
-            interviewerId,
-            round,
-          },
-          {
-            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-          },
-        );
-
-        alert("Interview rescheduled successfully!");
-        onClose();
-      }catch(err){
-        const errorData = err.response?.data;
-
-        if (errorData?.type === "ROUND_ALREADY_SCHEDULED") {
-          alert(`⚠️ ${errorData.message}`);
-        }
-      }finally{
-        setLoading(false);
-      }
-      return;
-    }
-
+    setError("");
+    setLoading(true);
     try {
-      setLoading(true);
-
-      await axios.post(
-        `${API_URL}/api/interviews`,
-        {
-          applicationId: application._id,
+      if (reschedule) {
+        await axios.put(`/interviews/${interviewId}/reschedule`, {
           scheduledAt: new Date(`${date}T${time}`),
-          interviewerId,
-          round,
-        },
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        },
-      );
-console.log("interview scheduled successfully");
-
-      alert("Interview scheduled successfully!");
+          interviewerName,
+          interviewerEmail,
+        });
+      } else {
+        await axios.post("/interviews", {
+          candidateId: candidate._id,
+          scheduledAt: new Date(`${date}T${time}`),
+          interviewerName,
+          interviewerEmail,
+          roundType: expectedRoundType,
+        });
+      }
+      onSuccess?.();
       onClose();
     } catch (err) {
-      const errorData = err.response?.data;
-
-      if (errorData?.type === "ROUND_ALREADY_SCHEDULED") {
-        alert(`⚠️ ${errorData.message}`);
-      }
+      setError(err.response?.data?.message || "Something went wrong");
     } finally {
       setLoading(false);
     }
@@ -130,78 +49,25 @@ console.log("interview scheduled successfully");
 
   return (
     <Modal open={open} onClose={onClose}>
-      <Box
-        sx={{
-          p: 4,
-          bgcolor: "white",
-          borderRadius: 3,
-          width: { xs: "90%", sm: 450 },
-          mx: "auto",
-          mt: "10%",
-          boxShadow: 24,
-          zIndex: 1400,
-        }}
-      >
-        <Typography variant="h5" fontWeight="bold" mb={3}>
-          Schedule Interview
+      <Box sx={{ p: 4, bgcolor: "white", borderRadius: 3, width: { xs: "90%", sm: 450 }, mx: "auto", mt: "10%", boxShadow: 24 }}>
+        <Typography variant="h5" fontWeight="bold" mb={1}>
+          {reschedule ? "Reschedule Interview" : "Schedule Interview"}
+        </Typography>
+        <Typography color="text.secondary" sx={{ mb: 3 }}>
+          {ROUND_LABELS[expectedRoundType] || ""}
         </Typography>
 
-        <TextField
-          label="Date"
-          type="date"
-          fullWidth
-          sx={{ mb: 2 }}
-          InputLabelProps={{ shrink: true }}
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-        />
+        {error && <Typography color="error" sx={{ mb: 2 }}>{error}</Typography>}
 
-        <TextField
-          label="Time"
-          type="time"
-          fullWidth
-          sx={{ mb: 2 }}
-          InputLabelProps={{ shrink: true }}
-          value={time}
-          onChange={(e) => setTime(e.target.value)}
-        />
-
-        <TextField
-          select
-          label="Interviewer"
-          fullWidth
-          value={interviewerId}
-          onChange={(e) => setInterviewerId(e.target.value)}
-          disabled={loading}
-          sx={{ mb: 3 }}
-        >
-          {loading ? (
-            <MenuItem disabled>
-              <CircularProgress size={20} /> Loading...
-            </MenuItem>
-          ) : interviewers.length === 0 ? (
-            <MenuItem disabled>No interviewers found</MenuItem>
-          ) : (
-            interviewers.map((interviewer) => (
-              <MenuItem key={interviewer._id} value={interviewer._id}>
-                {interviewer.name}
-              </MenuItem>
-            ))
-          )}
-        </TextField>
+        <TextField label="Date" type="date" fullWidth sx={{ mb: 2 }} InputLabelProps={{ shrink: true }} value={date} onChange={(e) => setDate(e.target.value)} />
+        <TextField label="Time" type="time" fullWidth sx={{ mb: 2 }} InputLabelProps={{ shrink: true }} value={time} onChange={(e) => setTime(e.target.value)} />
+        <TextField label="Interviewer Name" fullWidth sx={{ mb: 2 }} value={interviewerName} onChange={(e) => setInterviewerName(e.target.value)} />
+        <TextField label="Interviewer Email" fullWidth sx={{ mb: 3 }} value={interviewerEmail} onChange={(e) => setInterviewerEmail(e.target.value)} />
 
         <Box display="flex" gap={2}>
-          <Button variant="outlined" onClick={onClose} fullWidth>
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleSubmit}
-            fullWidth
-            disabled={!date || !time || !interviewerId}
-          >
-            {loading ? <CircularProgress size={20} /> : "Schedule Interview"}
+          <Button variant="outlined" onClick={onClose} fullWidth>Cancel</Button>
+          <Button variant="contained" color="primary" onClick={handleSubmit} fullWidth disabled={loading}>
+            {loading ? <CircularProgress size={20} /> : "Confirm"}
           </Button>
         </Box>
       </Box>

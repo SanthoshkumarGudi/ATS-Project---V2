@@ -7,20 +7,16 @@ import {
   Typography,
   Box,
   Alert,
-  Link,
   Divider,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
   InputAdornment,
   IconButton,
   Paper,
+  CircularProgress,
 } from "@mui/material";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import { GoogleLogin } from "@react-oauth/google";
-import { Mail, Lock, Eye, EyeOff, User, Briefcase } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, User, CheckCircle2 } from "lucide-react";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -31,7 +27,6 @@ export default function AuthPage() {
     name: "",
     email: "",
     password: "",
-    role: "candidate",
   });
   const [fieldErrors, setFieldErrors] = useState({
     name: "",
@@ -41,6 +36,12 @@ export default function AuthPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  // ---- Email verification additions ----
+  const [needsVerification, setNeedsVerification] = useState(false); // 403 EMAIL_NOT_VERIFIED on login
+  const [registeredSuccess, setRegisteredSuccess] = useState(false); // shown after successful register
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendMessage, setResendMessage] = useState("");
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -76,6 +77,8 @@ export default function AuthPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setNeedsVerification(false);
+    setResendMessage("");
     if (!isLogin && !validateRegister()) return;
     setLoading(true);
     const url = isLogin ? "/api/login" : "/api/register";
@@ -84,15 +87,39 @@ export default function AuthPage() {
         ...formData,
         email: formData.email.toLowerCase().trim(),
       });
-      login(res.data.token, res.data.user);
-      window.location.href = "/";
+
+      if (isLogin) {
+        login(res.data.token, res.data.user);
+        window.location.href = "/";
+      } else {
+        // Registration no longer logs the user in — account is unverified until they click the email link.
+        setRegisteredSuccess(true);
+      }
     } catch (err) {
-      setError(
-        err.response?.data?.message ||
-          (isLogin ? "Invalid credentials" : "Registration failed")
-      );
+      const resData = err.response?.data;
+      if (isLogin && resData?.code === "EMAIL_NOT_VERIFIED") {
+        setNeedsVerification(true);
+        setError(resData.message);
+      } else {
+        setError(resData?.message || (isLogin ? "Invalid credentials" : "Registration failed"));
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setResendLoading(true);
+    setResendMessage("");
+    try {
+      const { data } = await axios.post(`${API_URL}/api/auth/resend-verification`, {
+        email: formData.email.toLowerCase().trim(),
+      });
+      setResendMessage(data.message);
+    } catch (err) {
+      setResendMessage(err.response?.data?.message || "Couldn't resend the email — please try again.");
+    } finally {
+      setResendLoading(false);
     }
   };
 
@@ -100,9 +127,35 @@ export default function AuthPage() {
     setIsLogin(toLogin);
     setError("");
     setFieldErrors({ name: "", email: "", password: "" });
-    setFormData({ name: "", email: "", password: "", role: "candidate" });
+    setFormData({ name: "", email: "", password: "" });
     setShowPassword(false);
+    setNeedsVerification(false);
+    setRegisteredSuccess(false);
+    setResendMessage("");
   };
+
+  // ---------- Post-registration screen ----------
+  if (registeredSuccess) {
+    return (
+      <Box
+        sx={{
+          minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
+          background: "linear-gradient(135deg, #f0fdfa 0%, #e0f2fe 50%, #ede9fe 100%)", px: 2,
+        }}
+      >
+        <Container maxWidth="xs">
+          <Paper elevation={0} sx={{ p: { xs: 3, sm: 4 }, borderRadius: 3, border: "1px solid", borderColor: "divider", textAlign: "center" }}>
+            <CheckCircle2 size={48} color="#15803d" style={{ marginBottom: 12 }} />
+            <Typography variant="h6" fontWeight={700} gutterBottom>Check your email</Typography>
+            <Typography color="text.secondary" sx={{ mb: 3 }}>
+              We've sent a verification link to <strong>{formData.email}</strong>. You'll need to verify before you can sign in.
+            </Typography>
+            <Button variant="outlined" onClick={() => switchMode(true)}>Back to Sign in</Button>
+          </Paper>
+        </Container>
+      </Box>
+    );
+  }
 
   return (
     <Box
@@ -188,6 +241,26 @@ export default function AuthPage() {
             </Alert>
           )}
 
+          {needsVerification && (
+            <Box sx={{ mb: 2 }}>
+              <Button
+                fullWidth
+                variant="outlined"
+                startIcon={resendLoading ? <CircularProgress size={16} /> : <Mail size={16} />}
+                onClick={handleResend}
+                disabled={resendLoading}
+                sx={{ mb: resendMessage ? 1.5 : 0 }}
+              >
+                Resend verification email
+              </Button>
+              {resendMessage && (
+                <Alert severity={resendMessage.toLowerCase().includes("resent") ? "success" : "warning"} sx={{ borderRadius: 2 }}>
+                  {resendMessage}
+                </Alert>
+              )}
+            </Box>
+          )}
+
           <Box component="form" onSubmit={handleSubmit}>
             {/* Name — register only */}
             {!isLogin && (
@@ -267,8 +340,6 @@ export default function AuthPage() {
                 ),
               }}
             />
-
-           
 
             <Button
               type="submit"

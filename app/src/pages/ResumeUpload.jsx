@@ -27,9 +27,6 @@ export default function ResumeUpload() {
     try {
       const fd = new FormData();
       fd.append("resume", file);
-      if (form.name) fd.append("name", form.name);
-      if (form.email) fd.append("email", form.email);
-      if (form.phone) fd.append("phone", form.phone);
 
       const { data } = await axios.post("/resumes/upload", fd, {
         headers: { "Content-Type": "multipart/form-data" },
@@ -91,9 +88,6 @@ export default function ResumeUpload() {
           {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>{error}</Alert>}
 
           <Box component="form" onSubmit={handleSubmit}>
-            <TextField fullWidth label="Full name" name="name" value={form.name} onChange={handleChange} margin="normal" required/>
-            <TextField fullWidth label="Email (optional)" name="email" type="email" value={form.email} onChange={handleChange} margin="normal" />
-            <TextField fullWidth label="Phone (optional)" name="phone" value={form.phone} onChange={handleChange} margin="normal" />
 
             <Button
               component="label"

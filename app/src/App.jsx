@@ -4,7 +4,6 @@ import { Box, CircularProgress, Typography } from "@mui/material";
 import { useAuth } from "./context/AuthContext";
 import DashboardLayout from "./layouts/DashboardLayout";
 import Footer from "./components/Footer";
-
 import AuthPage from "./pages/AuthPage";
 import ResumeUpload from "./pages/ResumeUpload";
 import Dashboard from "./pages/Dashboard";
@@ -15,6 +14,7 @@ import RejectedCandidates from "./pages/RejectedCandidates";
 import InterviewAnalytics from "./pages/InterviewAnalytics";
 import InternalPortal from "./pages/InternalPortal";
 import ShareQR from "./pages/ShareQR";
+import VerifyEmail from "./pages/VerifyEmail";
 
 function PublicPage({ children }) {
   return (
@@ -47,7 +47,8 @@ export default function App() {
         {/* Public — no login needed */}
         <Route path="/" element={<PublicPage><ResumeUpload /></PublicPage>} />
         <Route path="/login" element={!user ? <PublicPage><AuthPage /></PublicPage> : <Navigate to="/dashboard" />} />
-
+        <Route path="/verify-email" element={<PublicPage><VerifyEmail /></PublicPage>} />
+        
         {/* Hiring Manager area — all share the sidebar/topbar shell */}
         <Route element={<ProtectedLayout user={user} />}>
           <Route path="/dashboard" element={<Dashboard />} />

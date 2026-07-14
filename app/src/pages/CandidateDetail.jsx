@@ -52,6 +52,8 @@ export default function CandidateDetail() {
 
   const completedRoundTypes = interviews.filter((i) => i.status === "completed").map((i) => i.roundType);
   const sequence = SEQUENCE[candidate.tier] || SEQUENCE.mid;
+  console.log("sequence is ", sequence);
+  
   const nextRound = sequence.find((r) => !completedRoundTypes.includes(r));
   const allRoundsDone = !nextRound;
 
@@ -75,16 +77,6 @@ export default function CandidateDetail() {
         <Divider sx={{ my: 3 }} />
 
         <Grid container spacing={2}>
-          <Grid item xs={12} sm={4}>
-            <TextField
-              select
-              label="Tier (override)"
-              fullWidth
-              value={candidate.tier}
-              onChange={(e) => updateStatus() && null}
-              disabled
-            />
-          </Grid>
           <Grid item xs={12} sm={4}>
             <Typography variant="body2" color="text.secondary">Experience</Typography>
             <Typography>{candidate.experienceYears || 0} years</Typography>

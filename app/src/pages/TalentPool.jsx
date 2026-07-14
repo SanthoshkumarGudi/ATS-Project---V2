@@ -100,7 +100,7 @@ export default function TalentPool() {
         <Grid container spacing={2}>
           {candidates.map((c) => (
             <Grid item xs={12} sm={6} md={4} key={c._id}>
-              <Card>
+              <Card sx={{width: 300, height: 250}}>
                 <CardActionArea onClick={() => navigate(`/candidate/${c._id}`)} sx={{ p: 2 }}>
                   <CardContent sx={{ p: 0 }}>
                     <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
