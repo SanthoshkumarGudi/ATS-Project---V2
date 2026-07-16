@@ -5,9 +5,10 @@ import {
 } from "@mui/material";
 import axios from "../utils/api";
 
-const ROUND_LABELS = { tech: "Tech Round", manager: "Manager Round", hr: "HR Round" };
+// Mirrors backend/src/utils/tier.js STAGE_LABELS
+const ROUND_LABELS = { hr: "HR Round", tech: "Technical Round", manager: "Manager Round" };
 
-export default function InterviewSchedulerModal({ open, onClose, candidate, expectedRoundType, reschedule, interviewId, onSuccess }) {
+export default function InterviewSchedulerModal({ open, onClose, candidate, expectedRoundLabel, reschedule, interviewId, onSuccess }) {
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [interviewerName, setInterviewerName] = useState("");
@@ -20,11 +21,19 @@ export default function InterviewSchedulerModal({ open, onClose, candidate, expe
       setError("Please fill in date, time, and interviewer name.");
       return;
     }
+    // The backend requires an interviewer email when scheduling a new round — the
+    // feedback link can only be delivered (and only accessed) via that address.
+    // Reschedules can leave it blank since the existing interview already has one on file.
+    if (!reschedule && !interviewerEmail) {
+      setError("Interviewer email is required — the feedback link is sent only to this address.");
+      return;
+    }
     setError("");
     setLoading(true);
     try {
       if (reschedule) {
-        await axios.put(`/interviews/${interviewId}/reschedule`, {
+         await axios.post("/interviews", {
+          candidateId: candidate._id,
           scheduledAt: new Date(`${date}T${time}`),
           interviewerName,
           interviewerEmail,
@@ -35,7 +44,8 @@ export default function InterviewSchedulerModal({ open, onClose, candidate, expe
           scheduledAt: new Date(`${date}T${time}`),
           interviewerName,
           interviewerEmail,
-          roundType: expectedRoundType,
+          // Note: stage is derived server-side from candidate.status (fixed HR -> Tech ->
+          // Manager sequence), so roundType is intentionally not sent here.
         });
       }
       onSuccess?.();
@@ -53,8 +63,8 @@ export default function InterviewSchedulerModal({ open, onClose, candidate, expe
         <Typography variant="h5" fontWeight="bold" mb={1}>
           {reschedule ? "Reschedule Interview" : "Schedule Interview"}
         </Typography>
-        <Typography color="text.secondary" sx={{ mb: 3 }}>
-          {ROUND_LABELS[expectedRoundType] || ""}
+       <Typography color="text.secondary" sx={{ mb: 3 }}>
+          {expectedRoundLabel || ""}
         </Typography>
 
         {error && <Typography color="error" sx={{ mb: 2 }}>{error}</Typography>}
@@ -62,7 +72,16 @@ export default function InterviewSchedulerModal({ open, onClose, candidate, expe
         <TextField label="Date" type="date" fullWidth sx={{ mb: 2 }} InputLabelProps={{ shrink: true }} value={date} onChange={(e) => setDate(e.target.value)} />
         <TextField label="Time" type="time" fullWidth sx={{ mb: 2 }} InputLabelProps={{ shrink: true }} value={time} onChange={(e) => setTime(e.target.value)} />
         <TextField label="Interviewer Name" fullWidth sx={{ mb: 2 }} value={interviewerName} onChange={(e) => setInterviewerName(e.target.value)} />
-        <TextField label="Interviewer Email (optional)" fullWidth sx={{ mb: 3 }} value={interviewerEmail} onChange={(e) => setInterviewerEmail(e.target.value)} />
+        <TextField
+          label={reschedule ? "Interviewer Email (optional)" : "Interviewer Email"}
+          type="email"
+          required={!reschedule}
+          fullWidth
+          sx={{ mb: 3 }}
+          value={interviewerEmail}
+          onChange={(e) => setInterviewerEmail(e.target.value)}
+          helperText={!reschedule ? "The feedback link is sent only to this address." : ""}
+        />
 
         <Box display="flex" gap={2}>
           <Button variant="outlined" onClick={onClose} fullWidth>Cancel</Button>

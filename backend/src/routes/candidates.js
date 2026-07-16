@@ -4,6 +4,8 @@ const router = express.Router();
 const Candidate = require("../models/Candidate");
 const { protect } = require("../middleware/auth");
 const { computeTier } = require("../utils/tier");
+const Interview = require("../models/Interview");
+const { computeNextRound, roundLabel } = require("../utils/interviewFlow");
 
 // GET /api/candidates — search/filter the pool
 router.get("/", protect, async (req, res) => {
@@ -24,6 +26,24 @@ router.get("/", protect, async (req, res) => {
     res.json(candidates);
   } catch (err) {
     console.error("Candidate list error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// GET /api/candidates/:id/next-round — what round should be scheduled next, if any
+router.get("/:id/next-round", protect, async (req, res) => {
+  try {
+    const candidate = await Candidate.findById(req.params.id);
+    if (!candidate) return res.status(404).json({ message: "Candidate not found" });
+
+    const completed = await Interview.find({ candidate: req.params.id, status: "completed" }).sort({ scheduledAt: 1 });
+    const next = computeNextRound(completed);
+
+    res.json({
+      next: next ? { roundType: next.roundType, roundNumber: next.roundNumber, label: roundLabel(next.roundType, next.roundNumber) } : null,
+    });
+  } catch (err) {
+    console.error("Next-round lookup error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });

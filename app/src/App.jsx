@@ -15,6 +15,7 @@ import InterviewAnalytics from "./pages/InterviewAnalytics";
 import InternalPortal from "./pages/InternalPortal";
 import ShareQR from "./pages/ShareQR";
 import VerifyEmail from "./pages/VerifyEmail";
+import InterviewFeedbackPublic from "./pages/InterviewFeedbackPublic";
 
 function PublicPage({ children }) {
   return (
@@ -48,6 +49,9 @@ export default function App() {
         <Route path="/" element={<PublicPage><ResumeUpload /></PublicPage>} />
         <Route path="/login" element={!user ? <PublicPage><AuthPage /></PublicPage> : <Navigate to="/dashboard" />} />
         <Route path="/verify-email" element={<PublicPage><VerifyEmail /></PublicPage>} />
+
+        {/* interview feedback public route */}
+        <Route path="/interview-feedback/:token" element={<InterviewFeedbackPublic />} />
         
         {/* Hiring Manager area — all share the sidebar/topbar shell */}
         <Route element={<ProtectedLayout user={user} />}>
