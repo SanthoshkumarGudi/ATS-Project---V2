@@ -28,22 +28,41 @@ router.post("/", protect, async (req, res) => {
     const { candidateId, scheduledAt, interviewerName, interviewerEmail, roundType: manualRoundType } = req.body;
 
     const candidate = await Candidate.findById(candidateId);
+    
     if (!candidate) return res.status(404).json({ message: "Candidate not found" });
+      
 
-    const completed = await Interview.find({ candidate: candidateId, status: "completed" }).sort({ scheduledAt: 1 });
-    let next = computeNextRound(completed);
+    // this block is in testing
+      if (!candidate) return res.status(404).json({ message: "Candidate not found" });
 
-    // Manual override — e.g. HM decides to resume a candidate who was put "on hold"
-    if (!next && manualRoundType) {
-      const sameType = completed
-        .filter((i) => i.roundType === manualRoundType)
-        .sort((a, b) => (b.roundNumber || 1) - (a.roundNumber || 1));
-      next = { roundType: manualRoundType, roundNumber: sameType.length ? (sameType[0].roundNumber || 1) + 1 : 1 };
+    // NEW: block scheduling ANY new round while one is still pending, regardless of type.
+    const pendingInterview = await Interview.findOne({ candidate: candidateId, status: "scheduled" });
+    if (pendingInterview) {
+      return res.status(400).json({
+        success: false,
+        type: "INTERVIEW_ALREADY_PENDING",
+        message: `${candidate.name} already has a pending interview (not yet completed). Feedback must be submitted before scheduling another round.`,
+      });
+    }
+
+    //untill this 
+
+    let next;
+    if (manualRoundType) {
+      // Manual override — HR can pick ANY round type at ANY point: skip HR entirely, jump
+      // straight to Manager, run Tech + Manager only, repeat a stage out of sequence, etc.
+      // Round number is still auto-computed (from ALL past interviews of that type, any
+      // status) so repeats are labeled correctly even when used out of the normal sequence.
+      const allOfType = await Interview.find({ candidate: candidateId, roundType: manualRoundType }).sort({ roundNumber: -1 });
+      next = { roundType: manualRoundType, roundNumber: allOfType.length ? (allOfType[0].roundNumber || 1) + 1 : 1 };
+    } else {
+      const completed = await Interview.find({ candidate: candidateId, status: "completed" }).sort({ scheduledAt: 1 });
+      next = computeNextRound(completed);
     }
 
     if (!next) {
       return res.status(400).json({
-        message: `${candidate.name} has no further round to schedule automatically — check whether they're rejected, on hold, or have completed all rounds (status: ${candidate.status}).`,
+        message: `${candidate.name} has no further round to schedule automatically — check whether they're rejected, on hold, or have completed all rounds (status: ${candidate.status}), or use manual round selection to override.`,
       });
     }
 

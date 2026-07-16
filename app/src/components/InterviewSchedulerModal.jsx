@@ -1,23 +1,34 @@
 // src/components/InterviewSchedulerModal.jsx
 import { useState } from "react";
 import {
-  Modal, Box, Button, TextField, Typography, CircularProgress,
+  Modal, Box, Button, TextField, MenuItem, Typography, CircularProgress,
 } from "@mui/material";
 import axios from "../utils/api";
 
-const ROUND_LABELS = { tech: "Tech Round", manager: "Manager Round", hr: "HR Round" };
+const ROUND_OPTIONS = [
+  { value: "hr", label: "HR Round" },
+  { value: "tech", label: "Technical Round" },
+  { value: "manager", label: "Manager Round" },
+];
 
-export default function InterviewSchedulerModal({ open, onClose, candidate, expectedRoundType, reschedule, interviewId, onSuccess }) {
+export default function InterviewSchedulerModal({
+  open, onClose, candidate, expectedRoundLabel, manualMode, reschedule, interviewId, onSuccess,
+}) {
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [interviewerName, setInterviewerName] = useState("");
   const [interviewerEmail, setInterviewerEmail] = useState("");
+  const [manualRoundType, setManualRoundType] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const handleSubmit = async () => {
-    if (!date || !time || !interviewerName) {
-      setError("Please fill in date, time, and interviewer name.");
+    if (!date || !time || !interviewerName || !interviewerEmail) {
+      setError("Please fill in date, time, interviewer name, and interviewer email.");
+      return;
+    }
+    if (manualMode && !manualRoundType) {
+      setError("Please select which round to schedule.");
       return;
     }
     setError("");
@@ -35,7 +46,7 @@ export default function InterviewSchedulerModal({ open, onClose, candidate, expe
           scheduledAt: new Date(`${date}T${time}`),
           interviewerName,
           interviewerEmail,
-          roundType: expectedRoundType,
+          ...(manualMode ? { roundType: manualRoundType } : {}),
         });
       }
       onSuccess?.();
@@ -51,13 +62,25 @@ export default function InterviewSchedulerModal({ open, onClose, candidate, expe
     <Modal open={open} onClose={onClose}>
       <Box sx={{ p: 4, bgcolor: "white", borderRadius: 3, width: { xs: "90%", sm: 450 }, mx: "auto", mt: "10%", boxShadow: 24 }}>
         <Typography variant="h5" fontWeight="bold" mb={1}>
-          {reschedule ? "Reschedule Interview" : "Schedule Interview"}
+          {reschedule ? "Reschedule Interview" : manualMode ? "Schedule a Specific Round" : "Schedule Interview"}
         </Typography>
         <Typography color="text.secondary" sx={{ mb: 3 }}>
-          {ROUND_LABELS[expectedRoundType] || ""}
+          {manualMode ? "Manual override — pick any round, in any order" : (expectedRoundLabel || "")}
         </Typography>
 
         {error && <Typography color="error" sx={{ mb: 2 }}>{error}</Typography>}
+
+        {manualMode && !reschedule && (
+          <TextField
+            select fullWidth label="Round Type" sx={{ mb: 2 }}
+            value={manualRoundType}
+            onChange={(e) => setManualRoundType(e.target.value)}
+          >
+            {ROUND_OPTIONS.map((opt) => (
+              <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+            ))}
+          </TextField>
+        )}
 
         <TextField label="Date" type="date" fullWidth sx={{ mb: 2 }} InputLabelProps={{ shrink: true }} value={date} onChange={(e) => setDate(e.target.value)} />
         <TextField label="Time" type="time" fullWidth sx={{ mb: 2 }} InputLabelProps={{ shrink: true }} value={time} onChange={(e) => setTime(e.target.value)} />

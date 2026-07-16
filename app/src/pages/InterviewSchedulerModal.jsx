@@ -1,39 +1,41 @@
 // src/components/InterviewSchedulerModal.jsx
 import { useState } from "react";
 import {
-  Modal, Box, Button, TextField, Typography, CircularProgress,
+  Modal, Box, Button, TextField, MenuItem, Typography, CircularProgress,
 } from "@mui/material";
 import axios from "../utils/api";
 
-// Mirrors backend/src/utils/tier.js STAGE_LABELS
-const ROUND_LABELS = { hr: "HR Round", tech: "Technical Round", manager: "Manager Round" };
+const ROUND_OPTIONS = [
+  { value: "hr", label: "HR Round" },
+  { value: "tech", label: "Technical Round" },
+  { value: "manager", label: "Manager Round" },
+];
 
-export default function InterviewSchedulerModal({ open, onClose, candidate, expectedRoundLabel, reschedule, interviewId, onSuccess }) {
+export default function InterviewSchedulerModal({
+  open, onClose, candidate, expectedRoundLabel, manualMode, reschedule, interviewId, onSuccess,
+}) {
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [interviewerName, setInterviewerName] = useState("");
   const [interviewerEmail, setInterviewerEmail] = useState("");
+  const [manualRoundType, setManualRoundType] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const handleSubmit = async () => {
-    if (!date || !time || !interviewerName) {
-      setError("Please fill in date, time, and interviewer name.");
+    if (!date || !time || !interviewerName || !interviewerEmail) {
+      setError("Please fill in date, time, interviewer name, and interviewer email.");
       return;
     }
-    // The backend requires an interviewer email when scheduling a new round — the
-    // feedback link can only be delivered (and only accessed) via that address.
-    // Reschedules can leave it blank since the existing interview already has one on file.
-    if (!reschedule && !interviewerEmail) {
-      setError("Interviewer email is required — the feedback link is sent only to this address.");
+    if (manualMode && !manualRoundType) {
+      setError("Please select which round to schedule.");
       return;
     }
     setError("");
     setLoading(true);
     try {
       if (reschedule) {
-         await axios.post("/interviews", {
-          candidateId: candidate._id,
+        await axios.put(`/interviews/${interviewId}/reschedule`, {
           scheduledAt: new Date(`${date}T${time}`),
           interviewerName,
           interviewerEmail,
@@ -44,8 +46,7 @@ export default function InterviewSchedulerModal({ open, onClose, candidate, expe
           scheduledAt: new Date(`${date}T${time}`),
           interviewerName,
           interviewerEmail,
-          // Note: stage is derived server-side from candidate.status (fixed HR -> Tech ->
-          // Manager sequence), so roundType is intentionally not sent here.
+          ...(manualMode ? { roundType: manualRoundType } : {}),
         });
       }
       onSuccess?.();
@@ -61,27 +62,30 @@ export default function InterviewSchedulerModal({ open, onClose, candidate, expe
     <Modal open={open} onClose={onClose}>
       <Box sx={{ p: 4, bgcolor: "white", borderRadius: 3, width: { xs: "90%", sm: 450 }, mx: "auto", mt: "10%", boxShadow: 24 }}>
         <Typography variant="h5" fontWeight="bold" mb={1}>
-          {reschedule ? "Reschedule Interview" : "Schedule Interview"}
+          {reschedule ? "Reschedule Interview" : manualMode ? "Schedule a Specific Round" : "Schedule Interview"}
         </Typography>
-       <Typography color="text.secondary" sx={{ mb: 3 }}>
-          {expectedRoundLabel || ""}
+        <Typography color="text.secondary" sx={{ mb: 3 }}>
+          {manualMode ? "Manual override — pick any round, in any order" : (expectedRoundLabel || "")}
         </Typography>
 
         {error && <Typography color="error" sx={{ mb: 2 }}>{error}</Typography>}
 
+        {manualMode && !reschedule && (
+          <TextField
+            select fullWidth label="Round Type" sx={{ mb: 2 }}
+            value={manualRoundType}
+            onChange={(e) => setManualRoundType(e.target.value)}
+          >
+            {ROUND_OPTIONS.map((opt) => (
+              <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+            ))}
+          </TextField>
+        )}
+
         <TextField label="Date" type="date" fullWidth sx={{ mb: 2 }} InputLabelProps={{ shrink: true }} value={date} onChange={(e) => setDate(e.target.value)} />
         <TextField label="Time" type="time" fullWidth sx={{ mb: 2 }} InputLabelProps={{ shrink: true }} value={time} onChange={(e) => setTime(e.target.value)} />
         <TextField label="Interviewer Name" fullWidth sx={{ mb: 2 }} value={interviewerName} onChange={(e) => setInterviewerName(e.target.value)} />
-        <TextField
-          label={reschedule ? "Interviewer Email (optional)" : "Interviewer Email"}
-          type="email"
-          required={!reschedule}
-          fullWidth
-          sx={{ mb: 3 }}
-          value={interviewerEmail}
-          onChange={(e) => setInterviewerEmail(e.target.value)}
-          helperText={!reschedule ? "The feedback link is sent only to this address." : ""}
-        />
+        <TextField label="Interviewer Email" fullWidth sx={{ mb: 3 }} value={interviewerEmail} onChange={(e) => setInterviewerEmail(e.target.value)} />
 
         <Box display="flex" gap={2}>
           <Button variant="outlined" onClick={onClose} fullWidth>Cancel</Button>
