@@ -43,7 +43,7 @@ export default function InterviewFeedbackPublic() {
   const [submitError, setSubmitError] = useState("");
 
   const [form, setForm] = useState({
-    performance: 1,
+    performance: null,
     notes: "",
     recommendation: "",
     negotiatedSalary: "",

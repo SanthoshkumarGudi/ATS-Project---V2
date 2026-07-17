@@ -2,7 +2,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Box, CircularProgress, Typography } from "@mui/material";
 import { useAuth } from "./context/AuthContext";
-import DashboardLayout from "./layouts/DashboardLayout";
+import DashboardLayout from "./components/DashboardLayout";
 import Footer from "./components/Footer";
 import AuthPage from "./pages/AuthPage";
 import ResumeUpload from "./pages/ResumeUpload";

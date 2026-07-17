@@ -274,7 +274,7 @@ router.get("/feedback/:token", async (req, res) => {
 // ============================================================
 router.post("/feedback/:token", async (req, res) => {
   try {
-    const { rating, notes, recommendation, negotiatedSalary, noticePeriod } = req.body;
+    const { performance, notes, recommendation, negotiatedSalary, noticePeriod } = req.body;
     if (!recommendation) return res.status(400).json({ message: "Recommendation is required" });
 
     const interview = await Interview.findOne({ feedbackToken: req.params.token }).populate("candidate");
@@ -287,7 +287,7 @@ router.post("/feedback/:token", async (req, res) => {
     }
 
     interview.status = "completed";
-    interview.feedback = { rating, notes, recommendation, negotiatedSalary, noticePeriod };
+    interview.feedback = { performance, notes, recommendation, negotiatedSalary, noticePeriod };
     interview.feedbackAt = new Date();
     interview.feedbackToken = undefined;
     interview.feedbackTokenExpires = undefined;

@@ -161,6 +161,9 @@ export default function CandidateDetail() {
   const canScheduleNext = !!nextRound && candidate.status !== "rejected";
   const isShortlistedOrLater = candidate.status !== "new";
 
+  console.log("interviews object is ", interviews);
+  
+
   return (
     <Container maxWidth="md" sx={{ py: 5 }}>
       <Button onClick={() => navigate("/pool")} sx={{ mb: 2, textTransform: "none" }}>&larr; Back to Talent Pool</Button>
@@ -238,7 +241,6 @@ export default function CandidateDetail() {
             </Button>
           )}
         </SectionCard>
-
         {/* Interview rounds — only visible once shortlisted */}
         {isShortlistedOrLater && (
           <SectionCard>
@@ -271,11 +273,11 @@ export default function CandidateDetail() {
                           {new Date(iv.scheduledAt).toLocaleString("en-IN")} · {iv.interviewerName}
                         </Typography>
                         <Chip size="small" label={iv.status} sx={{ mt: 1 }} />
-                        {iv.meetingLink && (
-                          <Button size="small" href={iv.meetingLink} target="_blank" sx={{ ml: 1, textTransform: "none" }}>
-                            Join Meet
-                          </Button>
-                        )}
+                        {iv.meetingLink && iv.status !== "completed" && (
+                      <Button size="small" href={iv.meetingLink} target="_blank" sx={{ ml: 1, textTransform: "none" }}>
+                        Join Meet
+                      </Button>
+                    )}
                       </Box>
                       {iv.status === "scheduled" && (
                         <Stack direction="row" spacing={1}>
@@ -294,7 +296,9 @@ export default function CandidateDetail() {
                     </Stack>
                     {iv.feedback?.recommendation && (
                       <Box sx={{ mt: 2, pt: 2, borderTop: "1px solid #eee" }}>
-                        <Typography variant="body2"><strong>Recommendation:</strong> {iv.feedback.recommendation}</Typography>
+                        <Typography variant="body2"><strong>Feedback by the interviewer:</strong> </Typography>
+                        <Typography variant="body2" color="text.secondary">Performance: {iv.feedback.performance}/10</Typography>
+                        <Typography variant="body2" color="text.secondary">Recommendation: {iv.feedback.recommendation}</Typography>
                         {iv.feedback.notes && <Typography variant="body2" color="text.secondary">{iv.feedback.notes}</Typography>}
                       </Box>
                     )}
