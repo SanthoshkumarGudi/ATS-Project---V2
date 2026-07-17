@@ -26,7 +26,7 @@ const interviewSchema = new mongoose.Schema(
     feedbackToken: { type: String },
     feedbackTokenExpires: { type: Date },
     feedback: {
-      rating: { type: Number, min: 1, max: 5 },
+      performance: { type: Number, min: 1, max: 10 },
       notes: String,
       recommendation: {
         type: String,

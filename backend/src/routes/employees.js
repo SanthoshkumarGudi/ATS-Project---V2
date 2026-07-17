@@ -118,7 +118,7 @@ router.post("/from-candidate/:candidateId", protect, async (req, res) => {
 
     candidate.convertedToEmployee = true;
     candidate.employeeId = employee._id;
-    candidate.status = "onboarding";
+    candidate.setStatus("onboarding");
     await candidate.save();
 
     res.status(201).json({ message: "Employee record created", employee });

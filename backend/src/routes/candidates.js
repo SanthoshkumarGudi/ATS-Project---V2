@@ -62,21 +62,21 @@ router.get("/:id", protect, async (req, res) => {
 // PATCH /api/candidates/:id — manual override: status, tier, tags, experience
 router.patch("/:id", protect, async (req, res) => {
   try {
-    const allowed = ["status", "tier", "tags", "experienceYears", "name", "email", "phone"];
-    const updates = {};
+    const candidate = await Candidate.findById(req.params.id);
+    if (!candidate) return res.status(404).json({ message: "Candidate not found" });
+
+    const allowed = ["tier", "tags", "experienceYears", "name", "email", "phone"];
     for (const key of allowed) {
-      if (req.body[key] !== undefined) updates[key] = req.body[key];
+      if (req.body[key] !== undefined) candidate[key] = req.body[key];
     }
-    // Recompute tier automatically if experience changed but tier wasn't set explicitly
-    if (updates.experienceYears !== undefined && updates.tier === undefined) {
-      updates.tier = computeTier(updates.experienceYears);
+    if (req.body.experienceYears !== undefined && req.body.tier === undefined) {
+      candidate.tier = computeTier(req.body.experienceYears);
+    }
+    if (req.body.status !== undefined) {
+      candidate.setStatus(req.body.status);
     }
 
-    const candidate = await Candidate.findByIdAndUpdate(req.params.id, updates, {
-      new: true,
-      runValidators: true,
-    });
-    if (!candidate) return res.status(404).json({ message: "Candidate not found" });
+    await candidate.save();
     res.json({ message: "Candidate updated", candidate });
   } catch (err) {
     console.error("Candidate update error:", err);
@@ -88,15 +88,16 @@ router.patch("/:id", protect, async (req, res) => {
 router.patch("/:id/offer", protect, async (req, res) => {
   try {
     const { offerSentAt, offerAcceptedAt, documentsCollected, onboardingDate, status } = req.body;
-    const update = {};
-    if (offerSentAt !== undefined) update["onboarding.offerSentAt"] = offerSentAt;
-    if (offerAcceptedAt !== undefined) update["onboarding.offerAcceptedAt"] = offerAcceptedAt;
-    if (documentsCollected !== undefined) update["onboarding.documentsCollected"] = documentsCollected;
-    if (onboardingDate !== undefined) update["onboarding.onboardingDate"] = onboardingDate;
-    if (status !== undefined) update.status = status;
-
-    const candidate = await Candidate.findByIdAndUpdate(req.params.id, update, { new: true });
+    const candidate = await Candidate.findById(req.params.id);
     if (!candidate) return res.status(404).json({ message: "Candidate not found" });
+
+    if (offerSentAt !== undefined) candidate.onboarding.offerSentAt = offerSentAt;
+    if (offerAcceptedAt !== undefined) candidate.onboarding.offerAcceptedAt = offerAcceptedAt;
+    if (documentsCollected !== undefined) candidate.onboarding.documentsCollected = documentsCollected;
+    if (onboardingDate !== undefined) candidate.onboarding.onboardingDate = onboardingDate;
+    if (status !== undefined) candidate.setStatus(status);
+
+    await candidate.save();
     res.json({ message: "Onboarding info updated", candidate });
   } catch (err) {
     console.error("Offer update error:", err);

@@ -112,7 +112,7 @@ router.post("/", protect, async (req, res) => {
     interview.meetingLink = meetingLink;
     await interview.save();
 
-    candidate.status = `${next.roundType}-round`;
+    candidate.setStatus(`${next.roundType}-round`);
     await candidate.save();
 
     const feedbackUrl = `${FRONTEND_URL}/interview-feedback/${feedbackToken}`;
@@ -295,14 +295,14 @@ router.post("/feedback/:token", async (req, res) => {
 
     const candidate = interview.candidate;
     if (recommendation === "reject") {
-      candidate.status = "rejected";
+      candidate.setStatus("rejected");
     } else if (recommendation === "hold") {
-      candidate.status = "on-hold";
+      candidate.setStatus("on-hold");
     } else if (recommendation === "repeat") {
-      candidate.status = `${interview.roundType}-round`;
+      candidate.setStatus(`${interview.roundType}-round`);
     } else if (recommendation === "proceed") {
       const idx = FIXED_SEQUENCE.indexOf(interview.roundType);
-      candidate.status = idx === FIXED_SEQUENCE.length - 1 ? "final-evaluation" : `${FIXED_SEQUENCE[idx + 1]}-round`;
+      candidate.setStatus(idx === FIXED_SEQUENCE.length - 1 ? "final-evaluation" : `${FIXED_SEQUENCE[idx + 1]}-round`);
     }
     await candidate.save();
 

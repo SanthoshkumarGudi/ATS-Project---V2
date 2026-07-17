@@ -43,6 +43,12 @@ const candidateSchema = new mongoose.Schema(
       ],
       default: "new",
     },
+      statusHistory: [
+      {
+        status: { type: String },
+        changedAt: { type: Date, default: Date.now },
+      },
+    ],
 
     onboarding: {
       offerSentAt: Date,
@@ -56,5 +62,11 @@ const candidateSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
+candidateSchema.methods.setStatus = function (newStatus) {
+  if (this.status !== newStatus) {
+    this.status = newStatus;
+    this.statusHistory.push({ status: newStatus, changedAt: new Date() });
+  }
+};
 
 module.exports = mongoose.model("Candidate", candidateSchema);

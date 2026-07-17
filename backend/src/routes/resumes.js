@@ -36,6 +36,7 @@ router.post("/upload", upload.single("resume"), async (req, res) => {
       tier,
       source: "public-upload",
       status: "new",
+      statusHistory: [{ status: "new", changedAt: new Date() }],
     });
 
     res.status(201).json({
