@@ -10,7 +10,7 @@ const app = express();
 
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://ats-frontend-pzdc.onrender.com"],
+    origin: ["http://localhost:5173", "https://ats-project-v2-hvot.onrender.com"],
     credentials: true,
   }),
 );
