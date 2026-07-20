@@ -16,6 +16,12 @@ app.use(
 );
 app.use(express.json());
 
+// Global error handler — catches anything that slips past individual route try/catch blocks
+app.use((err, req, res, next) => {
+  console.error("UNHANDLED ERROR:", err);
+  res.status(500).json({ message: "Server error", error: err.message });
+});
+
 const User = require("./models/User");
 const jwt = require("jsonwebtoken");
 const bcryptjs = require("bcryptjs");
