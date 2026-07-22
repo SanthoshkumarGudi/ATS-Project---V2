@@ -6,7 +6,9 @@ import DashboardLayout from "./components/DashboardLayout";
 import Footer from "./components/Footer";
 import AuthPage from "./pages/AuthPage";
 import ResumeUpload from "./pages/ResumeUpload";
-import Dashboard from "./pages/Dashboard";
+import { lazy, Suspense } from "react";
+
+const Dashboard = lazy(() => import("./pages/Dashboard"));
 import TalentPool from "./pages/TalentPool";
 import CandidateDetail from "./pages/CandidateDetail";
 import OfferOnboarding from "./pages/OfferOnboarding";
@@ -55,7 +57,27 @@ export default function App() {
         
         {/* Hiring Manager area — all share the sidebar/topbar shell */}
         <Route element={<ProtectedLayout user={user} />}>
-          <Route path="/dashboard" element={<Dashboard />} />
+          <Route
+  path="/dashboard"
+  element={
+    <Suspense
+      fallback={
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            minHeight: "100vh",
+          }}
+        >
+          <CircularProgress />
+        </Box>
+      }
+    >
+      <Dashboard />
+    </Suspense>
+  }
+/>
           <Route path="/pool" element={<TalentPool />} />
           <Route path="/candidate/:id" element={<CandidateDetail />} />
           <Route path="/candidate/:id/offer" element={<OfferOnboarding />} />
