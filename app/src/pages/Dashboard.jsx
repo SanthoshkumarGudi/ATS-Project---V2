@@ -83,7 +83,6 @@ export default function Dashboard() {
     senior: Math.round((tierCounts.senior / tierTotal) * 100),
   };
   const conicGradient = `conic-gradient(${colors.teal} 0% ${tierPct.fresher}%, ${colors.orange} ${tierPct.fresher}% ${tierPct.fresher + tierPct.mid}%, ${colors.navy} ${tierPct.fresher + tierPct.mid}% 100%)`;
-
   // Top skills in the pool
   const skillCounts = {};
   candidates.forEach((c) => (c.skills || []).forEach((s) => { skillCounts[s] = (skillCounts[s] || 0) + 1; }));

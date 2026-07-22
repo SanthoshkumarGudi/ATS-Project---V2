@@ -8,6 +8,31 @@ const Interview = require("../models/Interview");
 const { computeNextRound, roundLabel } = require("../utils/interviewFlow");
 
 // GET /api/candidates — search/filter the pool
+// router.get("/", protect, async (req, res) => {
+//   try {
+//     const { tier, status, skill, q } = req.query;
+//     const filter = {};
+//     if (tier) filter.tier = tier;
+//     if (status) filter.status = status;
+//     if (skill) filter.skills = { $regex: skill, $options: "i" };
+//     if (q) {
+//       filter.$or = [
+//         { name: { $regex: q, $options: "i" } },
+//         { email: { $regex: q, $options: "i" } },
+//         { skills: { $regex: q, $options: "i" } },
+//       ];
+//     }
+//     const candidates = await Candidate.find(filter).sort({ createdAt: -1 });
+//     res.json(candidates);
+//   } catch (err) {
+//     console.error("Candidate list error:", err);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// });
+
+// GET /api/candidates — search/filter the pool
+// Supports comma-separated skills in `q` (e.g. "React, Node, Python") — candidates
+// matching more of the listed skills are ranked higher in the results.
 router.get("/", protect, async (req, res) => {
   try {
     const { tier, status, skill, q } = req.query;
@@ -15,14 +40,34 @@ router.get("/", protect, async (req, res) => {
     if (tier) filter.tier = tier;
     if (status) filter.status = status;
     if (skill) filter.skills = { $regex: skill, $options: "i" };
-    if (q) {
+
+    const searchTerms = q ? q.split(",").map((s) => s.trim()).filter(Boolean) : [];
+
+    if (searchTerms.length > 0) {
+      const skillRegexes = searchTerms.map((term) => new RegExp(term, "i"));
       filter.$or = [
         { name: { $regex: q, $options: "i" } },
         { email: { $regex: q, $options: "i" } },
-        { skills: { $regex: q, $options: "i" } },
+        { skills: { $in: skillRegexes } },
       ];
     }
-    const candidates = await Candidate.find(filter).sort({ createdAt: -1 });
+
+    let candidates = await Candidate.find(filter).sort({ createdAt: -1 }).lean();
+
+    // Rank by how many of the searched skills each candidate actually has
+    if (searchTerms.length > 0) {
+      const lowerTerms = searchTerms.map((t) => t.toLowerCase());
+      candidates = candidates
+        .map((c) => {
+          const candidateSkillsLower = (c.skills || []).map((s) => s.toLowerCase());
+          const matchCount = lowerTerms.filter((term) =>
+            candidateSkillsLower.some((cs) => cs.includes(term) || term.includes(cs))
+          ).length;
+          return { ...c, matchCount };
+        })
+        .sort((a, b) => b.matchCount - a.matchCount || new Date(b.createdAt) - new Date(a.createdAt));
+    }
+
     res.json(candidates);
   } catch (err) {
     console.error("Candidate list error:", err);

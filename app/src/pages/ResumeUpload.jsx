@@ -1,8 +1,15 @@
 // src/pages/ResumeUpload.jsx
 import { useState } from "react";
 import {
-  Box, Container, Paper, Typography, TextField, Button,
-  Alert, CircularProgress, Stack,
+  Box,
+  Container,
+  Paper,
+  Typography,
+  TextField,
+  Button,
+  Alert,
+  CircularProgress,
+  Stack,
 } from "@mui/material";
 import { UploadCloud, CheckCircle2 } from "lucide-react";
 import axios from "../utils/api";
@@ -14,7 +21,8 @@ export default function ResumeUpload() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(null);
 
-  const handleChange = (e) => setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
+  const handleChange = (e) =>
+    setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -33,7 +41,10 @@ export default function ResumeUpload() {
       });
       setSuccess(data);
     } catch (err) {
-      setError(err.response?.data?.message || "Something went wrong. Please try again.");
+      setError(
+        err.response?.data?.message ||
+          "Something went wrong. Please try again.",
+      );
     } finally {
       setLoading(false);
     }
@@ -41,11 +52,25 @@ export default function ResumeUpload() {
 
   if (success) {
     return (
-      <Box sx={{ minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center", px: 2 }}>
+      <Box
+        sx={{
+          minHeight: "80vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          px: 2,
+        }}
+      >
         <Container maxWidth="xs">
           <Paper sx={{ p: 4, borderRadius: 3, textAlign: "center" }}>
-            <CheckCircle2 size={48} color="#15803d" style={{ marginBottom: 12 }} />
-            <Typography variant="h6" fontWeight={700} gutterBottom>Resume Submitted!</Typography>
+            <CheckCircle2
+              size={48}
+              color="#15803d"
+              style={{ marginBottom: 12 }}
+            />
+            <Typography variant="h6" fontWeight={700} gutterBottom>
+              Resume Submitted!
+            </Typography>
             <Typography color="text.secondary">{success.message}</Typography>
           </Paper>
         </Container>
@@ -60,13 +85,22 @@ export default function ResumeUpload() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "linear-gradient(135deg, #f0fdfa 0%, #e0f2fe 50%, #ede9fe 100%)",
+        background:
+          "linear-gradient(135deg, #f0fdfa 0%, #e0f2fe 50%, #ede9fe 100%)",
         px: 2,
         py: 6,
       }}
     >
       <Container maxWidth="xs">
-        <Paper elevation={0} sx={{ p: { xs: 3, sm: 4 }, borderRadius: 3, border: "1px solid", borderColor: "divider" }}>
+        <Paper
+          elevation={0}
+          sx={{
+            p: { xs: 3, sm: 4 },
+            borderRadius: 3,
+            border: "1px solid",
+            borderColor: "divider",
+          }}
+        >
           <Box sx={{ textAlign: "center", mb: 3 }}>
             <Typography
               variant="h4"
@@ -85,10 +119,13 @@ export default function ResumeUpload() {
             </Typography>
           </Box>
 
-          {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>{error}</Alert>}
+          {error && (
+            <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
+              {error}
+            </Alert>
+          )}
 
           <Box component="form" onSubmit={handleSubmit}>
-
             <Button
               component="label"
               fullWidth
@@ -112,11 +149,19 @@ export default function ResumeUpload() {
               size="large"
               disabled={loading}
               sx={{
-                mt: 3, py: 1.4, borderRadius: 2, fontWeight: 600, textTransform: "none",
+                mt: 3,
+                py: 1.4,
+                borderRadius: 2,
+                fontWeight: 600,
+                textTransform: "none",
                 background: "linear-gradient(120deg, #0f2a4a, #2c5282)",
               }}
             >
-              {loading ? <CircularProgress size={22} color="inherit" /> : "Submit Resume"}
+              {loading ? (
+                <CircularProgress size={22} sx={{ color: "#fff" }} />
+              ) : (
+                "Submit Resume"
+              )}{" "}
             </Button>
           </Box>
         </Paper>

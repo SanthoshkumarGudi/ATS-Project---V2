@@ -47,7 +47,7 @@ export default function InternalPortal() {
         <Box>
           <Typography variant="h4" fontWeight={800}>Internal Portal</Typography>
           <Typography color="text.secondary">
-            Search current employees for internal mobility before looking externally.
+            Search current employees for internal mobility.
           </Typography>
         </Box>
         <Button variant="contained" startIcon={<Plus size={18} />} onClick={() => setAddOpen(true)}>

@@ -33,8 +33,11 @@ export default function TalentPool() {
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
 
+  const isSkillSearch = q.trim().length > 0;
+
   const fetchCandidates = useCallback(async () => {
     setLoading(true);
+    setError("");
     try {
       const params = {};
       if (q) params.q = q;
@@ -62,9 +65,9 @@ export default function TalentPool() {
         Every resume submitted lands here. Search, filter by tier, and open a candidate to shortlist, schedule interviews, or make an offer.
       </Typography>
 
-      <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ mb: 4 }}>
+      <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ mb: 1 }}>
         <TextField
-          placeholder="Search by name, email, or skill"
+          placeholder="Search by name, email, or skills (comma separated, e.g. React, Node, Python)"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           fullWidth
@@ -86,7 +89,14 @@ export default function TalentPool() {
         </TextField>
       </Stack>
 
-      {loading&& !error ? (
+      {isSkillSearch && (
+        <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 3 }}>
+          Separate multiple skills with commas — candidates matching more of them are shown first.
+        </Typography>
+      )}
+      {!isSkillSearch && <Box sx={{ mb: 4 }} />}
+
+      {loading && !error ? (
         <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}><CircularProgress /></Box>
       ) : error ? (
         <Typography color="error" sx={{ textAlign: "center", py: 8 }}>
@@ -100,7 +110,7 @@ export default function TalentPool() {
         <Grid container spacing={2}>
           {candidates.map((c) => (
             <Grid item xs={12} sm={6} md={4} key={c._id}>
-              <Card sx={{width: 300, height: 250}}>
+              <Card sx={{ width: 300, height: 250 }}>
                 <CardActionArea onClick={() => navigate(`/candidate/${c._id}`)} sx={{ p: 2 }}>
                   <CardContent sx={{ p: 0 }}>
                     <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
@@ -118,11 +128,21 @@ export default function TalentPool() {
                         <Chip key={s} label={s} size="small" variant="outlined" />
                       ))}
                     </Stack>
-                    <Chip
-                      label={STATUS_LABELS[c.status] || c.status}
-                      size="small"
-                      sx={{ bgcolor: "#f1f5f9", fontWeight: 600 }}
-                    />
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Chip
+                        label={STATUS_LABELS[c.status] || c.status}
+                        size="small"
+                        sx={{ bgcolor: "#f1f5f9", fontWeight: 600 }}
+                      />
+                      {isSkillSearch && typeof c.matchCount === "number" && (
+                        <Chip
+                          label={`${c.matchCount} skill match${c.matchCount === 1 ? "" : "es"}`}
+                          size="small"
+                          color={c.matchCount > 0 ? "success" : "default"}
+                          variant="outlined"
+                        />
+                      )}
+                    </Stack>
                   </CardContent>
                 </CardActionArea>
               </Card>
