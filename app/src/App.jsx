@@ -7,8 +7,7 @@ import Footer from "./components/Footer";
 import AuthPage from "./pages/AuthPage";
 import ResumeUpload from "./pages/ResumeUpload";
 import { lazy, Suspense } from "react";
-
-const Dashboard = lazy(() => import("./pages/Dashboard"));
+import CandidateAvailability from "./pages/CandidateAvailability";
 import TalentPool from "./pages/TalentPool";
 import CandidateDetail from "./pages/CandidateDetail";
 import OfferOnboarding from "./pages/OfferOnboarding";
@@ -18,6 +17,9 @@ import InternalPortal from "./pages/InternalPortal";
 import ShareQR from "./pages/ShareQR";
 import VerifyEmail from "./pages/VerifyEmail";
 import InterviewFeedbackPublic from "./pages/InterviewFeedbackPublic";
+
+//Lazy load the dashboard to improve initial load time
+const Dashboard = lazy(() => import("./pages/Dashboard"));
 
 function PublicPage({ children }) {
   return (
@@ -91,6 +93,14 @@ export default function App() {
           path="/interview-feedback/:token"
           element={<InterviewFeedbackPublic />}
         />
+{/* 
+        Candidate availability public route */}
+        <Route
+          path="/availability/:token"
+          element={<CandidateAvailability />}
+        />
+
+        {/* Protected — login required */}
 
         {/* Hiring Manager area — all share the sidebar/topbar shell */}
         <Route element={<ProtectedLayout user={user} />}>

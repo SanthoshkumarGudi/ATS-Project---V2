@@ -222,6 +222,33 @@ export default function CandidateDetail() {
             {(candidate.skills || []).map((s) => <Chip key={s} label={s} size="small" />)}
           </Stack>
 
+          {candidate.availability?.slots?.length > 0 && (
+            <Box sx={{ mt: 2, p: 2, bgcolor: "#f0fdf9", borderRadius: "12px", border: "1px solid #cdeee4" }}>
+              <Typography variant="caption" sx={{ textTransform: "uppercase", fontWeight: 800, color: colors.teal }}>
+                Candidate's Available Slots
+              </Typography>
+              <Stack spacing={0.5} sx={{ mt: 1 }}>
+                {candidate.availability.slots.map((s, i) => (
+                  <Typography key={i} variant="body2">• {s}</Typography>
+                ))}
+              </Stack>
+              {candidate.availability.notes && (
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontStyle: "italic" }}>
+                  "{candidate.availability.notes}"
+                </Typography>
+              )}
+            </Box>
+          )}
+
+          {candidate.status !== "new" && !candidate.availability?.submittedAt && (
+            <Button
+              size="small" variant="outlined" sx={{ mt: 2, textTransform: "none" }}
+              onClick={async () => { await axios.post(`/candidates/${id}/request-availability`); load(); }}
+            >
+              Resend Availability Request
+            </Button>
+          )}
+
           {["summary", "experience", "internships", "education", "projects", "certifications"].map((key) =>
             candidate.sections?.[key] ? (
               <Box key={key} sx={{ mt: 2, p: 2, bgcolor: "#f8fbfb", borderRadius: "12px" }}>

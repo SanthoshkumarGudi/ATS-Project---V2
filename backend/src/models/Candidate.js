@@ -56,7 +56,14 @@ const candidateSchema = new mongoose.Schema(
       documentsCollected: { type: Boolean, default: false },
       onboardingDate: Date,
     },
-
+    availability: {
+      token: { type: String },
+      tokenExpires: { type: Date },
+      requestedAt: { type: Date },
+      submittedAt: { type: Date },
+      slots: [{ type: String }],
+      notes: { type: String },
+    },
     convertedToEmployee: { type: Boolean, default: false },
     employeeId: { type: mongoose.Schema.Types.ObjectId, ref: "Employee", default: null },
   },
