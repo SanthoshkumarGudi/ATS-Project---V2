@@ -19,14 +19,27 @@ router.get("/me", protect, async (req, res) => {
 router.get("/verify-email", async (req, res) => {
   try {
     const { token } = req.query;
-    if (!token) return res.status(400).json({ message: "Verification token is required" });
+    if (!token)
+      return res
+        .status(400)
+        .json({ message: "Verification token is required" });
 
     const user = await User.findOne({ verificationToken: token });
     if (!user) {
-      return res.status(400).json({ message: "Invalid or already-used verification link" });
+      return res
+        .status(400)
+        .json({ message: "Invalid or already-used verification link" });
     }
-    if (user.verificationTokenExpires && user.verificationTokenExpires < new Date()) {
-      return res.status(400).json({ message: "This verification link has expired. Please request a new one." });
+    if (
+      user.verificationTokenExpires &&
+      user.verificationTokenExpires < new Date()
+    ) {
+      return res
+        .status(400)
+        .json({
+          message:
+            "This verification link has expired. Please request a new one.",
+        });
     }
 
     user.isVerified = true;
@@ -48,8 +61,16 @@ router.post("/resend-verification", async (req, res) => {
     if (!email) return res.status(400).json({ message: "Email is required" });
 
     const user = await User.findOne({ email: email.toLowerCase() });
-    if (!user) return res.status(404).json({ message: "No account found with that email" });
-    if (user.isVerified) return res.status(400).json({ message: "This account is already verified — you can log in." });
+    if (!user)
+      return res
+        .status(404)
+        .json({ message: "No account found with that email" });
+    if (user.isVerified)
+      return res
+        .status(400)
+        .json({
+          message: "This account is already verified — you can log in.",
+        });
 
     const token = crypto.randomBytes(32).toString("hex");
     user.verificationToken = token;
@@ -64,7 +85,9 @@ router.post("/resend-verification", async (req, res) => {
        <a href="${verifyUrl}" style="background:#1f8f86;color:white;padding:12px 24px;text-decoration:none;border-radius:8px;font-weight:bold;">Verify Email</a>`,
     );
 
-    res.json({ message: "Verification email resent — please check your inbox." });
+    res.json({
+      message: "Verification email resent — please check your inbox.",
+    });
   } catch (err) {
     console.error("Resend verification error:", err);
     res.status(500).json({ message: "Server error" });

@@ -19,7 +19,7 @@ router.post("/upload", upload.single("resume"), async (req, res) => {
     const parsed = await parseResumeFromUrl(resumeUrl);
 
     const name = parsed.name || "Unknown";
-    console.log("name is ", name)
+    console.log("name is ", name);
     const email = parsed.email || "";
     const phone = parsed.phone || "";
     const tier = computeTier(parsed.experienceYears);
@@ -42,7 +42,11 @@ router.post("/upload", upload.single("resume"), async (req, res) => {
     res.status(201).json({
       success: true,
       message: "Thanks! Your resume has been submitted for review.",
-      candidate: { id: candidate._id, name: candidate.name, tier: candidate.tier },
+      candidate: {
+        id: candidate._id,
+        name: candidate.name,
+        tier: candidate.tier,
+      },
     });
   } catch (err) {
     console.error("Resume upload error:", err);

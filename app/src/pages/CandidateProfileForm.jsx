@@ -37,53 +37,47 @@ export default function CandidateProfileForm({ user }) {
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setError("");
-  setLoading(true);
+    e.preventDefault();
+    setError("");
+    setLoading(true);
 
-  try {
-    const formDataToSend = new FormData();
+    try {
+      const formDataToSend = new FormData();
 
-    // append text fields
-    Object.keys(formData).forEach((key) => {
-      formDataToSend.append(key, formData[key]);
-    });
+      // append text fields
+      Object.keys(formData).forEach((key) => {
+        formDataToSend.append(key, formData[key]);
+      });
 
-    // append image
-    if (imageFile) {
-      formDataToSend.append("image", imageFile);
-    }
+      // append image
+      if (imageFile) {
+        formDataToSend.append("image", imageFile);
+      }
 
-    console.log("formdata to send", formDataToSend);
-    
+      console.log("formdata to send", formDataToSend);
 
-    await axios.post(
-      `${API_URL}/api/candidate/profile`,
-      formDataToSend,
-      {
+      await axios.post(`${API_URL}/api/candidate/profile`, formDataToSend, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
           "Content-Type": "multipart/form-data",
         },
-      }
-    );
+      });
 
-    setSuccess(true);
-    setTimeout(() => {
-      window.location.href = "/jobs";
-    }, 2000);
-  } catch (err) {
-    setError(
-      err.response?.data?.message ||
-      "Failed to save profile. Please try again."
-    );
-  } finally {
-    setLoading(false);
-  }
-};
+      setSuccess(true);
+      setTimeout(() => {
+        window.location.href = "/jobs";
+      }, 2000);
+    } catch (err) {
+      setError(
+        err.response?.data?.message ||
+          "Failed to save profile. Please try again.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
-console.log("image file is ", imageFile);
-
+  console.log("image file is ", imageFile);
 
   return (
     <Container maxWidth="sm" sx={{ mt: 8 }}>

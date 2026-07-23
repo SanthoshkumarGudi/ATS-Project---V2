@@ -2,7 +2,15 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
-  Box, Container, Grid, Paper, Typography, Chip, Stack, Button, CircularProgress,
+  Box,
+  Container,
+  Grid,
+  Paper,
+  Typography,
+  Chip,
+  Stack,
+  Button,
+  CircularProgress,
 } from "@mui/material";
 import { Eye, Download } from "lucide-react";
 import axios from "../utils/api";
@@ -10,7 +18,11 @@ import TierBadge from "../components/TierBadge";
 import InterviewSchedulerModal from "../components/InterviewSchedulerModal";
 import { colors } from "../theme/dashboardColors";
 
-const ROUND_LABELS = { hr: "HR Round", tech: "Technical Round", manager: "Manager Round" };
+const ROUND_LABELS = {
+  hr: "HR Round",
+  tech: "Technical Round",
+  manager: "Manager Round",
+};
 function displayRoundLabel(roundType, roundNumber = 1) {
   const base = ROUND_LABELS[roundType] || roundType;
   return roundNumber > 1 ? `${base} ${roundNumber}` : base;
@@ -33,7 +45,9 @@ const STATUS_LABELS = {
 
 function downloadUrlFor(resumeUrl) {
   if (!resumeUrl) return resumeUrl;
-  return resumeUrl.includes("/upload/") ? resumeUrl.replace("/upload/", "/upload/fl_attachment/") : resumeUrl;
+  return resumeUrl.includes("/upload/")
+    ? resumeUrl.replace("/upload/", "/upload/fl_attachment/")
+    : resumeUrl;
 }
 
 // Builds a URL the browser will render INLINE, bypassing whatever
@@ -52,8 +66,22 @@ async function buildInlinePreviewUrl(resumeUrl) {
 
 function SectionCard({ title, children, sx }) {
   return (
-    <Paper sx={{ p: { xs: 2.5, sm: 3.5 }, borderRadius: "16px", boxShadow: "0 8px 22px rgba(16,40,60,.06), 0 2px 6px rgba(16,40,60,.04)", ...sx }}>
-      {title && <Typography sx={{ fontSize: 15, fontWeight: 800, color: colors.navy, mb: 2 }}>{title}</Typography>}
+    <Paper
+      sx={{
+        p: { xs: 2.5, sm: 3.5 },
+        borderRadius: "16px",
+        boxShadow:
+          "0 8px 22px rgba(16,40,60,.06), 0 2px 6px rgba(16,40,60,.04)",
+        ...sx,
+      }}
+    >
+      {title && (
+        <Typography
+          sx={{ fontSize: 15, fontWeight: 800, color: colors.navy, mb: 2 }}
+        >
+          {title}
+        </Typography>
+      )}
       {children}
     </Paper>
   );
@@ -63,27 +91,63 @@ function StatusHistoryRow({ history }) {
   if (!history || history.length === 0) return null;
   return (
     <Box sx={{ overflowX: "auto", pb: 0.5 }}>
-      <Stack direction="row" alignItems="center" sx={{ minWidth: "max-content" }}>
+      <Stack
+        direction="row"
+        alignItems="center"
+        sx={{ minWidth: "max-content" }}
+      >
         {history.map((h, idx) => {
           const isLast = idx === history.length - 1;
           const isRejected = h.status === "rejected";
           const isHold = h.status === "on-hold";
-          const bg = !isLast ? "#f1f5f7" : isRejected ? colors.redBg : isHold ? "#fef9c3" : colors.teal;
-          const fg = !isLast ? colors.navySoft : isRejected ? colors.red : isHold ? "#a16207" : "#fff";
+          const bg = !isLast
+            ? "#f1f5f7"
+            : isRejected
+              ? colors.redBg
+              : isHold
+                ? "#fef9c3"
+                : colors.teal;
+          const fg = !isLast
+            ? colors.navySoft
+            : isRejected
+              ? colors.red
+              : isHold
+                ? "#a16207"
+                : "#fff";
           return (
             <Box key={idx} sx={{ display: "flex", alignItems: "center" }}>
               <Box sx={{ textAlign: "center", px: 1 }}>
-                <Box sx={{
-                  px: 1.75, py: 0.9, borderRadius: "999px", bgcolor: bg, color: fg,
-                  fontWeight: isLast ? 800 : 600, fontSize: 12.5, whiteSpace: "nowrap",
-                }}>
+                <Box
+                  sx={{
+                    px: 1.75,
+                    py: 0.9,
+                    borderRadius: "999px",
+                    bgcolor: bg,
+                    color: fg,
+                    fontWeight: isLast ? 800 : 600,
+                    fontSize: 12.5,
+                    whiteSpace: "nowrap",
+                  }}
+                >
                   {STATUS_LABELS[h.status] || h.status}
                 </Box>
                 <Typography sx={{ fontSize: 10, color: "#94a3b8", mt: 0.5 }}>
-                  {new Date(h.changedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                  {new Date(h.changedAt).toLocaleDateString("en-IN", {
+                    day: "numeric",
+                    month: "short",
+                  })}
                 </Typography>
               </Box>
-              {idx < history.length - 1 && <Box sx={{ width: 26, height: 2, bgcolor: colors.border, flexShrink: 0 }} />}
+              {idx < history.length - 1 && (
+                <Box
+                  sx={{
+                    width: 26,
+                    height: 2,
+                    bgcolor: colors.border,
+                    flexShrink: 0,
+                  }}
+                />
+              )}
             </Box>
           );
         })}
@@ -124,12 +188,15 @@ export default function CandidateDetail() {
     }
   }, [id]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   // Revoke the blob URL on unmount (or whenever it changes) to avoid leaking memory
   useEffect(() => {
     return () => {
-      if (resumePreviewUrl?.startsWith("blob:")) URL.revokeObjectURL(resumePreviewUrl);
+      if (resumePreviewUrl?.startsWith("blob:"))
+        URL.revokeObjectURL(resumePreviewUrl);
     };
   }, [resumePreviewUrl]);
 
@@ -140,7 +207,8 @@ export default function CandidateDetail() {
 
   const handleToggleResumePreview = async () => {
     if (resumePreviewUrl) {
-      if (resumePreviewUrl.startsWith("blob:")) URL.revokeObjectURL(resumePreviewUrl);
+      if (resumePreviewUrl.startsWith("blob:"))
+        URL.revokeObjectURL(resumePreviewUrl);
       setResumePreviewUrl(null);
       return;
     }
@@ -168,7 +236,11 @@ export default function CandidateDetail() {
   };
 
   if (loading || !candidate) {
-    return <Box sx={{ display: "flex", justifyContent: "center", py: 10 }}><CircularProgress /></Box>;
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", py: 10 }}>
+        <CircularProgress />
+      </Box>
+    );
   }
 
   const canScheduleNext = !!nextRound && candidate.status !== "rejected";
@@ -176,7 +248,9 @@ export default function CandidateDetail() {
 
   // A round is "pending" if one is currently scheduled — availability collection
   // is irrelevant once a slot is actually booked, and resumes after that round completes.
-  const hasPendingInterview = interviews.some((iv) => iv.status === "scheduled");
+  const hasPendingInterview = interviews.some(
+    (iv) => iv.status === "scheduled",
+  );
 
   // Show the resend button only when: there's genuinely a next round to schedule,
   // nothing is currently booked, a request has actually gone out (not just inferred
@@ -189,26 +263,51 @@ export default function CandidateDetail() {
     candidate.status !== "rejected";
 
   const availabilityExpired =
-    candidate.availability?.tokenExpires && new Date(candidate.availability.tokenExpires) < new Date();
+    candidate.availability?.tokenExpires &&
+    new Date(candidate.availability.tokenExpires) < new Date();
 
-    console.log("candidate is", candidate);
+  console.log("candidate is", candidate);
 
   return (
     <Container maxWidth="md" sx={{ py: 5 }}>
-      <Button onClick={() => navigate("/pool")} sx={{ mb: 2, textTransform: "none" }}>&larr; Back to Talent Pool</Button>
+      <Button
+        onClick={() => navigate("/pool")}
+        sx={{ mb: 2, textTransform: "none" }}
+      >
+        &larr; Back to Talent Pool
+      </Button>
 
       <Stack spacing={3}>
         {/* Header */}
         <SectionCard>
-          <Stack direction="row" justifyContent="space-between" alignItems="flex-start" flexWrap="wrap" gap={2}>
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="flex-start"
+            flexWrap="wrap"
+            gap={2}
+          >
             <Box>
-              <Typography variant="h4" fontWeight={800} sx={{ color: colors.navy }}>{candidate.name}</Typography>
-              <Typography color="text.secondary">{candidate.email} {candidate.phone && `· ${candidate.phone}`}</Typography>
-              <Typography color="text.secondary">{candidate.location}</Typography>
+              <Typography
+                variant="h4"
+                fontWeight={800}
+                sx={{ color: colors.navy }}
+              >
+                {candidate.name}
+              </Typography>
+              <Typography color="text.secondary">
+                {candidate.email} {candidate.phone && `· ${candidate.phone}`}
+              </Typography>
+              <Typography color="text.secondary">
+                {candidate.location}
+              </Typography>
             </Box>
             <Stack direction="row" spacing={1} alignItems="center">
               <TierBadge tier={candidate.tier} />
-              <Chip label={STATUS_LABELS[candidate.status] || candidate.status} sx={{ bgcolor: "#f1f5f9", fontWeight: 700 }} />
+              <Chip
+                label={STATUS_LABELS[candidate.status] || candidate.status}
+                sx={{ bgcolor: "#f1f5f9", fontWeight: 700 }}
+              />
             </Stack>
           </Stack>
         </SectionCard>
@@ -222,18 +321,34 @@ export default function CandidateDetail() {
         <SectionCard title="Profile">
           <Grid container spacing={2} sx={{ mb: 2 }}>
             <Grid item xs={12} sm={6}>
-              <Typography variant="body2" color="text.secondary">Experience</Typography>
-              <Typography fontWeight={600}>{candidate.experienceYears || 0} years</Typography>
+              <Typography variant="body2" color="text.secondary">
+                Experience
+              </Typography>
+              <Typography fontWeight={600}>
+                {candidate.experienceYears || 0} years
+              </Typography>
             </Grid>
             <Grid item xs={12} sm={6}>
               <Stack direction="row" spacing={1.5}>
                 <Button
-                  variant="outlined" startIcon={<Eye size={16} />} sx={{ textTransform: "none" }}
-                  onClick={handleToggleResumePreview} disabled={resumeLoading}
+                  variant="outlined"
+                  startIcon={<Eye size={16} />}
+                  sx={{ textTransform: "none" }}
+                  onClick={handleToggleResumePreview}
+                  disabled={resumeLoading}
                 >
-                  {resumeLoading ? "Loading..." : resumePreviewUrl ? "Hide Resume" : "View Resume"}
+                  {resumeLoading
+                    ? "Loading..."
+                    : resumePreviewUrl
+                      ? "Hide Resume"
+                      : "View Resume"}
                 </Button>
-                <Button href={downloadUrlFor(candidate.resumeUrl)} variant="outlined" startIcon={<Download size={16} />} sx={{ textTransform: "none" }}>
+                <Button
+                  href={downloadUrlFor(candidate.resumeUrl)}
+                  variant="outlined"
+                  startIcon={<Download size={16} />}
+                  sx={{ textTransform: "none" }}
+                >
                   Download
                 </Button>
               </Stack>
@@ -241,65 +356,150 @@ export default function CandidateDetail() {
           </Grid>
 
           {resumePreviewUrl && (
-            <Box sx={{ mb: 2, borderRadius: "12px", overflow: "hidden", border: "1px solid #e3ebee" }}>
-              <Box component="iframe" src={resumePreviewUrl} title="Resume preview" sx={{ width: "100%", height: 700, border: "none", display: "block" }} />
+            <Box
+              sx={{
+                mb: 2,
+                borderRadius: "12px",
+                overflow: "hidden",
+                border: "1px solid #e3ebee",
+              }}
+            >
+              <Box
+                component="iframe"
+                src={resumePreviewUrl}
+                title="Resume preview"
+                sx={{
+                  width: "100%",
+                  height: 700,
+                  border: "none",
+                  display: "block",
+                }}
+              />
             </Box>
           )}
 
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>Skills</Typography>
-          <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ gap: 1, mb: 2 }}>
-            {(candidate.skills || []).map((s) => <Chip key={s} label={s} size="small" />)}
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            Skills
+          </Typography>
+          <Stack
+            direction="row"
+            spacing={1}
+            flexWrap="wrap"
+            sx={{ gap: 1, mb: 2 }}
+          >
+            {(candidate.skills || []).map((s) => (
+              <Chip key={s} label={s} size="small" />
+            ))}
           </Stack>
 
-          {candidate.availability?.slots?.length > 0 && candidate.status!== "rejected"&& candidate.status!== "hired" && (
-            <Box sx={{ mt: 2, p: 2, bgcolor: "#f0fdf9", borderRadius: "12px", border: "1px solid #cdeee4" }}>
-              <Typography variant="caption" sx={{ textTransform: "uppercase", fontWeight: 800, color: colors.teal }}>
-                Candidate's Available Slots
-              </Typography>
-              <Stack spacing={0.5} sx={{ mt: 1 }}>
-                {candidate.availability.slots.map((s, i) => (
-                  <Typography key={i} variant="body2">• {s}</Typography>
-                ))}
-              </Stack>
-              {candidate.availability.notes && (
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontStyle: "italic" }}>
-                  "{candidate.availability.notes}"
+          {candidate.availability?.slots?.length > 0 &&
+            candidate.status !== "rejected" &&
+            candidate.status !== "hired" && (
+              <Box
+                sx={{
+                  mt: 2,
+                  p: 2,
+                  bgcolor: "#f0fdf9",
+                  borderRadius: "12px",
+                  border: "1px solid #cdeee4",
+                }}
+              >
+                <Typography
+                  variant="caption"
+                  sx={{
+                    textTransform: "uppercase",
+                    fontWeight: 800,
+                    color: colors.teal,
+                  }}
+                >
+                  Candidate's Available Slots
                 </Typography>
-              )}
-            </Box>
-          )}
+                <Stack spacing={0.5} sx={{ mt: 1 }}>
+                  {candidate.availability.slots.map((s, i) => (
+                    <Typography key={i} variant="body2">
+                      • {s}
+                    </Typography>
+                  ))}
+                </Stack>
+                {candidate.availability.notes && (
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mt: 1, fontStyle: "italic" }}
+                  >
+                    "{candidate.availability.notes}"
+                  </Typography>
+                )}
+              </Box>
+            )}
 
           {needsAvailability && (
             <Stack spacing={0.5} sx={{ mt: 2 }}>
               <Typography variant="caption" color="text.secondary">
-                Availability requested {new Date(candidate.availability.requestedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                Availability requested{" "}
+                {new Date(
+                  candidate.availability.requestedAt,
+                ).toLocaleDateString("en-IN", {
+                  day: "numeric",
+                  month: "short",
+                })}
                 {nextRound?.label && ` for ${nextRound.label}`}
                 {availabilityExpired && " · link expired"}
               </Typography>
               <Button
-                size="small" variant="outlined" sx={{ textTransform: "none", alignSelf: "flex-start" }}
-                onClick={handleResendAvailability} disabled={availabilitySending}
+                size="small"
+                variant="outlined"
+                sx={{ textTransform: "none", alignSelf: "flex-start" }}
+                onClick={handleResendAvailability}
+                disabled={availabilitySending}
               >
-                {availabilitySending ? "Sending..." : "Resend Availability Request"}
+                {availabilitySending
+                  ? "Sending..."
+                  : "Resend Availability Request"}
               </Button>
             </Stack>
           )}
 
-          {["summary", "experience", "internships", "education", "projects", "certifications"].map((key) =>
+          {[
+            "summary",
+            "experience",
+            "internships",
+            "education",
+            "projects",
+            "certifications",
+          ].map((key) =>
             candidate.sections?.[key] ? (
-              <Box key={key} sx={{ mt: 2, p: 2, bgcolor: "#f8fbfb", borderRadius: "12px" }}>
-                <Typography variant="caption" sx={{ textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 800, color: colors.navySoft }}>
+              <Box
+                key={key}
+                sx={{ mt: 2, p: 2, bgcolor: "#f8fbfb", borderRadius: "12px" }}
+              >
+                <Typography
+                  variant="caption"
+                  sx={{
+                    textTransform: "uppercase",
+                    letterSpacing: 0.5,
+                    fontWeight: 800,
+                    color: colors.navySoft,
+                  }}
+                >
                   {key}
                 </Typography>
-                <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", mt: 0.5 }}>
+                <Typography
+                  variant="body2"
+                  sx={{ whiteSpace: "pre-wrap", mt: 0.5 }}
+                >
                   {candidate.sections[key]}
                 </Typography>
               </Box>
-            ) : null
+            ) : null,
           )}
 
           {candidate.status === "new" && (
-            <Button variant="contained" sx={{ mt: 3 }} onClick={() => updateStatus("shortlisted")}>
+            <Button
+              variant="contained"
+              sx={{ mt: 3 }}
+              onClick={() => updateStatus("shortlisted")}
+            >
               Shortlist Candidate
             </Button>
           )}
@@ -308,50 +508,105 @@ export default function CandidateDetail() {
         {/* Interview rounds — only visible once shortlisted */}
         {isShortlistedOrLater && (
           <SectionCard>
-            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }} flexWrap="wrap" gap={1}>
-              <Typography sx={{ fontSize: 15, fontWeight: 800, color: colors.navy }}>
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              alignItems="center"
+              sx={{ mb: 2 }}
+              flexWrap="wrap"
+              gap={1}
+            >
+              <Typography
+                sx={{ fontSize: 15, fontWeight: 800, color: colors.navy }}
+              >
                 Interview Rounds (HR → Technical → Manager)
               </Typography>
               <Stack direction="row" spacing={1}>
                 {canScheduleNext && (
-                  <Button variant="contained" onClick={() => { setRescheduleTarget(null); setManualMode(false); setSchedulerOpen(true); }}>
+                  <Button
+                    variant="contained"
+                    onClick={() => {
+                      setRescheduleTarget(null);
+                      setManualMode(false);
+                      setSchedulerOpen(true);
+                    }}
+                  >
                     Schedule {nextRound.label}
                   </Button>
                 )}
-                <Button variant="outlined" onClick={() => { setRescheduleTarget(null); setManualMode(true); setSchedulerOpen(true); }}>
+                <Button
+                  variant="outlined"
+                  onClick={() => {
+                    setRescheduleTarget(null);
+                    setManualMode(true);
+                    setSchedulerOpen(true);
+                  }}
+                >
                   Schedule a Specific Round
                 </Button>
               </Stack>
             </Stack>
 
             {interviews.length === 0 ? (
-              <Typography color="text.secondary">No interviews scheduled yet.</Typography>
+              <Typography color="text.secondary">
+                No interviews scheduled yet.
+              </Typography>
             ) : (
               <Stack spacing={2}>
                 {interviews.map((iv) => (
-                  <Paper key={iv._id} variant="outlined" sx={{ p: 2, borderRadius: "12px" }}>
-                    <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap">
+                  <Paper
+                    key={iv._id}
+                    variant="outlined"
+                    sx={{ p: 2, borderRadius: "12px" }}
+                  >
+                    <Stack
+                      direction="row"
+                      justifyContent="space-between"
+                      alignItems="center"
+                      flexWrap="wrap"
+                    >
                       <Box>
-                        <Typography fontWeight={700}>{displayRoundLabel(iv.roundType, iv.roundNumber)}</Typography>
+                        <Typography fontWeight={700}>
+                          {displayRoundLabel(iv.roundType, iv.roundNumber)}
+                        </Typography>
                         <Typography variant="body2" color="text.secondary">
-                          {new Date(iv.scheduledAt).toLocaleString("en-IN")} · {iv.interviewerName}
+                          {new Date(iv.scheduledAt).toLocaleString("en-IN")} ·{" "}
+                          {iv.interviewerName}
                         </Typography>
                         <Chip size="small" label={iv.status} sx={{ mt: 1 }} />
                         {iv.meetingLink && iv.status !== "completed" && (
-                      <Button size="small" href={iv.meetingLink} target="_blank" sx={{ ml: 1, textTransform: "none" }}>
-                        Join Meet
-                      </Button>
-                    )}
+                          <Button
+                            size="small"
+                            href={iv.meetingLink}
+                            target="_blank"
+                            sx={{ ml: 1, textTransform: "none" }}
+                          >
+                            Join Meet
+                          </Button>
+                        )}
                       </Box>
                       {iv.status === "scheduled" && (
                         <Stack direction="row" spacing={1}>
-                          <Button size="small" variant="outlined" onClick={() => { setRescheduleTarget(iv); setManualMode(false); setSchedulerOpen(true); }}>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={() => {
+                              setRescheduleTarget(iv);
+                              setManualMode(false);
+                              setSchedulerOpen(true);
+                            }}
+                          >
                             Reschedule
                           </Button>
                           <Button
                             size="small"
                             variant="contained"
-                            onClick={async () => { await axios.post(`/interviews/${iv._id}/resend-feedback-link`); load(); }}
+                            onClick={async () => {
+                              await axios.post(
+                                `/interviews/${iv._id}/resend-feedback-link`,
+                              );
+                              load();
+                            }}
                           >
                             Resend Feedback Link
                           </Button>
@@ -360,10 +615,20 @@ export default function CandidateDetail() {
                     </Stack>
                     {iv.feedback?.recommendation && (
                       <Box sx={{ mt: 2, pt: 2, borderTop: "1px solid #eee" }}>
-                        <Typography variant="body2"><strong>Feedback by the interviewer:</strong> </Typography>
-                        <Typography variant="body2" color="text.secondary">Performance: {iv.feedback.performance}/10</Typography>
-                        <Typography variant="body2" color="text.secondary">Recommendation: {iv.feedback.recommendation}</Typography>
-                        {iv.feedback.notes && <Typography variant="body2" color="text.secondary">{iv.feedback.notes}</Typography>}
+                        <Typography variant="body2">
+                          <strong>Feedback by the interviewer:</strong>{" "}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Performance: {iv.feedback.performance}/10
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Recommendation: {iv.feedback.recommendation}
+                        </Typography>
+                        {iv.feedback.notes && (
+                          <Typography variant="body2" color="text.secondary">
+                            {iv.feedback.notes}
+                          </Typography>
+                        )}
                       </Box>
                     )}
                   </Paper>
@@ -373,23 +638,44 @@ export default function CandidateDetail() {
 
             {!nextRound && candidate.status === "final-evaluation" && (
               <Box sx={{ mt: 3, textAlign: "center" }}>
-                <Typography sx={{ mb: 2 }}>All rounds complete — ready for final evaluation.</Typography>
+                <Typography sx={{ mb: 2 }}>
+                  All rounds complete — ready for final evaluation.
+                </Typography>
                 <Stack direction="row" spacing={2} justifyContent="center">
-                  <Button variant="contained" color="success" onClick={() => updateStatus("hired")}>Mark as Hired</Button>
-                  <Button variant="outlined" color="error" onClick={() => updateStatus("rejected")}>Reject</Button>
+                  <Button
+                    variant="contained"
+                    color="success"
+                    onClick={() => updateStatus("hired")}
+                  >
+                    Mark as Hired
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    onClick={() => updateStatus("rejected")}
+                  >
+                    Reject
+                  </Button>
                 </Stack>
               </Box>
             )}
 
             {candidate.status === "on-hold" && !nextRound && (
-              <Typography color="text.secondary" sx={{ mt: 3, textAlign: "center" }}>
-                This candidate is on hold. Use "Schedule a Specific Round" to resume when ready.
+              <Typography
+                color="text.secondary"
+                sx={{ mt: 3, textAlign: "center" }}
+              >
+                This candidate is on hold. Use "Schedule a Specific Round" to
+                resume when ready.
               </Typography>
             )}
 
             {candidate.status === "hired" && (
               <Box sx={{ mt: 3, textAlign: "center" }}>
-                <Button variant="contained" onClick={() => navigate(`/candidate/${id}/offer`)}>
+                <Button
+                  variant="contained"
+                  onClick={() => navigate(`/candidate/${id}/offer`)}
+                >
                   Continue to Offer & Onboarding
                 </Button>
               </Box>
@@ -403,7 +689,14 @@ export default function CandidateDetail() {
           open={schedulerOpen}
           onClose={() => setSchedulerOpen(false)}
           candidate={candidate}
-          expectedRoundLabel={rescheduleTarget ? displayRoundLabel(rescheduleTarget.roundType, rescheduleTarget.roundNumber) : nextRound?.label}
+          expectedRoundLabel={
+            rescheduleTarget
+              ? displayRoundLabel(
+                  rescheduleTarget.roundType,
+                  rescheduleTarget.roundNumber,
+                )
+              : nextRound?.label
+          }
           manualMode={manualMode}
           reschedule={!!rescheduleTarget}
           interviewId={rescheduleTarget?._id}

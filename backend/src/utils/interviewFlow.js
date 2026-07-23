@@ -3,7 +3,11 @@
 // Fixed sequence for every candidate, regardless of tier.
 const FIXED_SEQUENCE = ["hr", "tech", "manager"];
 
-const ROUND_LABELS = { hr: "HR Round", tech: "Technical Round", manager: "Manager Round" };
+const ROUND_LABELS = {
+  hr: "HR Round",
+  tech: "Technical Round",
+  manager: "Manager Round",
+};
 
 function roundLabel(roundType, roundNumber = 1) {
   const base = ROUND_LABELS[roundType] || roundType;
@@ -28,12 +32,19 @@ function computeNextRound(completedInterviews) {
   const last = completedInterviews[completedInterviews.length - 1];
   const recommendation = last.feedback?.recommendation;
 
-  if (!recommendation || recommendation === "reject" || recommendation === "hold") {
+  if (
+    !recommendation ||
+    recommendation === "reject" ||
+    recommendation === "hold"
+  ) {
     return null;
   }
 
   if (recommendation === "repeat") {
-    return { roundType: last.roundType, roundNumber: (last.roundNumber || 1) + 1 };
+    return {
+      roundType: last.roundType,
+      roundNumber: (last.roundNumber || 1) + 1,
+    };
   }
 
   if (recommendation === "proceed") {

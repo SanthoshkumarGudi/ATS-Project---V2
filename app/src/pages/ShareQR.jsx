@@ -1,6 +1,15 @@
 // src/pages/ShareQR.jsx
 import { useState } from "react";
-import { Container, Paper, Typography, Box, Button, TextField, Stack, Snackbar } from "@mui/material";
+import {
+  Container,
+  Paper,
+  Typography,
+  Box,
+  Button,
+  TextField,
+  Stack,
+  Snackbar,
+} from "@mui/material";
 import { Copy, Download, Printer } from "lucide-react";
 
 export default function ShareQR() {
@@ -54,7 +63,11 @@ export default function ShareQR() {
         </Typography>
 
         <Box sx={{ display: "flex", justifyContent: "center", mb: 3 }}>
-          <img src={qrImageUrl} alt="Resume upload QR code" style={{ width: 260, height: 260 }} />
+          <img
+            src={qrImageUrl}
+            alt="Resume upload QR code"
+            style={{ width: 260, height: 260 }}
+          />
         </Box>
 
         <TextField
@@ -65,13 +78,25 @@ export default function ShareQR() {
         />
 
         <Stack direction="row" spacing={1} justifyContent="center">
-          <Button variant="outlined" startIcon={<Copy size={16} />} onClick={handleCopy}>
+          <Button
+            variant="outlined"
+            startIcon={<Copy size={16} />}
+            onClick={handleCopy}
+          >
             Copy Link
           </Button>
-          <Button variant="outlined" startIcon={<Download size={16} />} onClick={handleDownload}>
+          <Button
+            variant="outlined"
+            startIcon={<Download size={16} />}
+            onClick={handleDownload}
+          >
             Download
           </Button>
-          <Button variant="contained" startIcon={<Printer size={16} />} onClick={handlePrint}>
+          <Button
+            variant="contained"
+            startIcon={<Printer size={16} />}
+            onClick={handlePrint}
+          >
             Print
           </Button>
         </Stack>

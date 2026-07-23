@@ -2,8 +2,19 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Box, Container, Typography, TextField, MenuItem, Grid, Card,
-  CardContent, CardActionArea, Chip, Stack, InputAdornment, CircularProgress,
+  Box,
+  Container,
+  Typography,
+  TextField,
+  MenuItem,
+  Grid,
+  Card,
+  CardContent,
+  CardActionArea,
+  Chip,
+  Stack,
+  InputAdornment,
+  CircularProgress,
 } from "@mui/material";
 import { Search } from "lucide-react";
 import axios from "../utils/api";
@@ -60,9 +71,12 @@ export default function TalentPool() {
 
   return (
     <Container maxWidth="lg" sx={{ py: 5 }}>
-      <Typography variant="h4" fontWeight={800} gutterBottom>Talent Pool</Typography>
+      <Typography variant="h4" fontWeight={800} gutterBottom>
+        Talent Pool
+      </Typography>
       <Typography color="text.secondary" sx={{ mb: 4 }}>
-        Every resume submitted lands here. Search, filter by tier, and open a candidate to shortlist, schedule interviews, or make an offer.
+        Every resume submitted lands here. Search, filter by tier, and open a
+        candidate to shortlist, schedule interviews, or make an offer.
       </Typography>
 
       <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ mb: 1 }}>
@@ -72,32 +86,57 @@ export default function TalentPool() {
           onChange={(e) => setQ(e.target.value)}
           fullWidth
           InputProps={{
-            startAdornment: <InputAdornment position="start"><Search size={18} /></InputAdornment>,
+            startAdornment: (
+              <InputAdornment position="start">
+                <Search size={18} />
+              </InputAdornment>
+            ),
           }}
         />
-        <TextField select label="Tier" value={tier} onChange={(e) => setTier(e.target.value)} sx={{ minWidth: 160 }}>
+        <TextField
+          select
+          label="Tier"
+          value={tier}
+          onChange={(e) => setTier(e.target.value)}
+          sx={{ minWidth: 160 }}
+        >
           <MenuItem value="">All Tiers</MenuItem>
           <MenuItem value="fresher">Fresher</MenuItem>
           <MenuItem value="mid">Mid</MenuItem>
           <MenuItem value="senior">Senior</MenuItem>
         </TextField>
-        <TextField select label="Status" value={status} onChange={(e) => setStatus(e.target.value)} sx={{ minWidth: 180 }}>
+        <TextField
+          select
+          label="Status"
+          value={status}
+          onChange={(e) => setStatus(e.target.value)}
+          sx={{ minWidth: 180 }}
+        >
           <MenuItem value="">All Statuses</MenuItem>
           {Object.entries(STATUS_LABELS).map(([val, label]) => (
-            <MenuItem key={val} value={val}>{label}</MenuItem>
+            <MenuItem key={val} value={val}>
+              {label}
+            </MenuItem>
           ))}
         </TextField>
       </Stack>
 
       {isSkillSearch && (
-        <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 3 }}>
-          Separate multiple skills with commas — candidates matching more of them are shown first.
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ display: "block", mb: 3 }}
+        >
+          Separate multiple skills with commas — candidates matching more of
+          them are shown first.
         </Typography>
       )}
       {!isSkillSearch && <Box sx={{ mb: 4 }} />}
 
       {loading && !error ? (
-        <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}><CircularProgress /></Box>
+        <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
+          <CircularProgress />
+        </Box>
       ) : error ? (
         <Typography color="error" sx={{ textAlign: "center", py: 8 }}>
           {error}
@@ -111,21 +150,44 @@ export default function TalentPool() {
           {candidates.map((c) => (
             <Grid item xs={12} sm={6} md={4} key={c._id}>
               <Card sx={{ width: 300, height: 250 }}>
-                <CardActionArea onClick={() => navigate(`/candidate/${c._id}`)} sx={{ p: 2 }}>
+                <CardActionArea
+                  onClick={() => navigate(`/candidate/${c._id}`)}
+                  sx={{ p: 2 }}
+                >
                   <CardContent sx={{ p: 0 }}>
-                    <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-                      <Typography variant="h6" fontWeight={700}>{c.name}</Typography>
+                    <Stack
+                      direction="row"
+                      justifyContent="space-between"
+                      alignItems="flex-start"
+                    >
+                      <Typography variant="h6" fontWeight={700}>
+                        {c.name}
+                      </Typography>
                       <TierBadge tier={c.tier} />
                     </Stack>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ mb: 1 }}
+                    >
                       {c.email || "No email on file"}
                     </Typography>
                     <Typography variant="body2" sx={{ mb: 1 }}>
                       {c.experienceYears || 0} yrs experience
                     </Typography>
-                    <Stack direction="row" spacing={0.5} flexWrap="wrap" sx={{ mb: 1.5, gap: 0.5 }}>
+                    <Stack
+                      direction="row"
+                      spacing={0.5}
+                      flexWrap="wrap"
+                      sx={{ mb: 1.5, gap: 0.5 }}
+                    >
                       {(c.skills || []).slice(0, 4).map((s) => (
-                        <Chip key={s} label={s} size="small" variant="outlined" />
+                        <Chip
+                          key={s}
+                          label={s}
+                          size="small"
+                          variant="outlined"
+                        />
                       ))}
                     </Stack>
                     <Stack direction="row" spacing={1} alignItems="center">

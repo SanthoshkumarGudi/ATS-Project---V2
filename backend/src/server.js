@@ -10,13 +10,14 @@ const app = express();
 
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://ats-project-v2-hvot.onrender.com"],
+    origin: [
+      "http://localhost:5173",
+      "https://ats-project-v2-hvot.onrender.com",
+    ],
     credentials: true,
   }),
 );
 app.use(express.json());
-
-
 
 const User = require("./models/User");
 const jwt = require("jsonwebtoken");
@@ -33,17 +34,19 @@ mongoose
   });
 
 // ==================== ROUTES ====================
-app.use("/api/resumes", require("./routes/resumes"));       // public upload
+app.use("/api/resumes", require("./routes/resumes")); // public upload
 app.use("/api/candidates", require("./routes/candidates")); // talent pool (protected)
 app.use("/api/interviews", require("./routes/interviews")); // protected
-app.use("/api/employees", require("./routes/employees"));   // internal directory (protected)
-app.use("/api/auth", require("./routes/auth"));              // protected /me + verify-email + resend-verification
+app.use("/api/employees", require("./routes/employees")); // internal directory (protected)
+app.use("/api/auth", require("./routes/auth")); // protected /me + verify-email + resend-verification
 
 // ==================== REGISTER (creates a Hiring Manager account — unverified) ====================
 app.post("/api/register", async (req, res) => {
   const { name, email, password } = req.body;
   if (!name || !email || !password) {
-    return res.status(400).json({ message: "Name, email and password are required" });
+    return res
+      .status(400)
+      .json({ message: "Name, email and password are required" });
   }
   try {
     const existingUser = await User.findOne({ email: email.toLowerCase() });
@@ -75,7 +78,8 @@ app.post("/api/register", async (req, res) => {
 
     // No login token issued — the account is unverified and login is blocked until verified.
     res.status(201).json({
-      message: "Account created. Please check your email to verify your account before logging in.",
+      message:
+        "Account created. Please check your email to verify your account before logging in.",
       email: user.email,
     });
   } catch (err) {
@@ -92,7 +96,8 @@ app.post("/api/login", async (req, res) => {
     if (!user) return res.status(400).json({ message: "Invalid credentials" });
 
     const isMatch = await bcryptjs.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
+    if (!isMatch)
+      return res.status(400).json({ message: "Invalid credentials" });
 
     if (!user.isVerified) {
       return res.status(403).json({
@@ -109,7 +114,13 @@ app.post("/api/login", async (req, res) => {
     );
     res.json({
       token,
-      user: { id: user._id, name: user.name, email: user.email, role: user.role, isVerified: user.isVerified },
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        isVerified: user.isVerified,
+      },
     });
   } catch (err) {
     console.error(err);
@@ -122,7 +133,10 @@ app.post("/api/login", async (req, res) => {
 app.post("/api/auth/google", async (req, res) => {
   const { credential } = req.body;
   try {
-    const ticket = await client.verifyIdToken({ idToken: credential, audience: process.env.GOOGLE_CLIENT_ID });
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
     const payload = ticket.getPayload();
     const { email, name } = payload;
 
@@ -144,7 +158,13 @@ app.post("/api/auth/google", async (req, res) => {
     );
     res.json({
       token,
-      user: { id: user._id, name: user.name, email: user.email, role: user.role, isVerified: user.isVerified },
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        isVerified: user.isVerified,
+      },
     });
   } catch (error) {
     console.error("Google auth error:", error.message);

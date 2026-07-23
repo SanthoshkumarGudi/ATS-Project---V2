@@ -93,7 +93,7 @@ export default function App() {
           path="/interview-feedback/:token"
           element={<InterviewFeedbackPublic />}
         />
-{/* 
+        {/* 
         Candidate availability public route */}
         <Route
           path="/availability/:token"

@@ -6,16 +6,33 @@ const { extractSkills } = require("./SkillExtractor");
 
 // ---------- Section splitting (keyword-based, handles "HEADER: content on same line") ----------
 const SECTION_KEYWORDS = {
-  summary: ["career summary", "professional summary", "summary", "objective", "profile", "about me"],
+  summary: [
+    "career summary",
+    "professional summary",
+    "summary",
+    "objective",
+    "profile",
+    "about me",
+  ],
   skills: ["technical skills", "core skills", "skills"],
   experience: [
-    "work experience", "professional experience", "relevant experience", "career history",
-    "employment history", "work history", "experience",
+    "work experience",
+    "professional experience",
+    "relevant experience",
+    "career history",
+    "employment history",
+    "work history",
+    "experience",
   ],
   internships: ["internship experience", "internships", "internship"],
   education: ["education"],
   projects: ["academic projects", "projects"],
-  certifications: ["certifications & licenses", "certifications", "certificates", "licenses"],
+  certifications: [
+    "certifications & licenses",
+    "certifications",
+    "certificates",
+    "licenses",
+  ],
 };
 
 function isAllCapsLine(line) {
@@ -25,10 +42,13 @@ function isAllCapsLine(line) {
 function matchSectionHeader(line) {
   const trimmed = line.trim();
   if (trimmed.length === 0 || trimmed.length > 60) return null;
-  const lower = trimmed.toLowerCase().replace(/[:•▪\-–—]+$/, "").trim();
+  const lower = trimmed
+    .toLowerCase()
+    .replace(/[:•▪\-–—]+$/, "")
+    .trim();
 
-  const allKeywords = Object.entries(SECTION_KEYWORDS).flatMap(([section, kws]) =>
-    kws.map((kw) => ({ section, kw })),
+  const allKeywords = Object.entries(SECTION_KEYWORDS).flatMap(
+    ([section, kws]) => kws.map((kw) => ({ section, kw })),
   );
   allKeywords.sort((a, b) => b.kw.length - a.kw.length); // longest/most-specific first
 
@@ -82,7 +102,20 @@ function extractExplicitExperienceYears(text) {
 }
 
 // ---------- Fallback: sum date ranges from the Experience section ONLY (never Internships/Education) ----------
-const MONTHS = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
+const MONTHS = {
+  jan: 0,
+  feb: 1,
+  mar: 2,
+  apr: 3,
+  may: 4,
+  jun: 5,
+  jul: 6,
+  aug: 7,
+  sep: 8,
+  oct: 9,
+  nov: 10,
+  dec: 11,
+};
 
 function parseDateToken(token) {
   token = token.trim().toLowerCase();
@@ -99,14 +132,17 @@ function parseDateToken(token) {
 
 function estimateExperienceFromDateRanges(sourceText) {
   if (!sourceText) return 0;
-  const rangePattern = /([a-zA-Z]{3,9}[.,]?\s*\d{4}|\d{4})\s*[-–—]{1,2}\s*(present|current|now|[a-zA-Z]{3,9}[.,]?\s*\d{4}|\d{4})/gi;
+  const rangePattern =
+    /([a-zA-Z]{3,9}[.,]?\s*\d{4}|\d{4})\s*[-–—]{1,2}\s*(present|current|now|[a-zA-Z]{3,9}[.,]?\s*\d{4}|\d{4})/gi;
   let totalMonths = 0;
   const matches = [...sourceText.matchAll(rangePattern)];
   for (const match of matches) {
     const start = parseDateToken(match[1]);
     const end = parseDateToken(match[2]);
     if (start && end && end > start) {
-      totalMonths += (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+      totalMonths +=
+        (end.getFullYear() - start.getFullYear()) * 12 +
+        (end.getMonth() - start.getMonth());
     }
   }
   return totalMonths > 0 ? Math.round((totalMonths / 12) * 10) / 10 : 0;
@@ -114,13 +150,19 @@ function estimateExperienceFromDateRanges(sourceText) {
 
 // ---------- Name / email / phone / location ----------
 function extractFields(text) {
-  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+  const lines = text
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
 
-  const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+  const emailMatch = text.match(
+    /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/,
+  );
   const email = emailMatch ? emailMatch[0] : "";
 
   let phone = "";
-  const phonePattern = /(\+?91|0)?[-.\s]?\d{10}\b|mobile[:\s]*\+?\d[\d\s\-()]{9,15}/gi;
+  const phonePattern =
+    /(\+?91|0)?[-.\s]?\d{10}\b|mobile[:\s]*\+?\d[\d\s\-()]{9,15}/gi;
   const phones = text.match(phonePattern) || [];
   for (const p of phones) {
     const num = p.replace(/[^0-9+]/g, "");
@@ -140,11 +182,14 @@ function extractFields(text) {
   for (let i = 0; i < Math.min(10, lines.length); i++) {
     const line = lines[i];
     if (
-      line.length > 3 && line.length < 50 &&
+      line.length > 3 &&
+      line.length < 50 &&
       !matchSectionHeader(line) &&
       /^[A-Z][a-zA-Z.]*(?:\s+[A-Z][a-zA-Z.]*){0,4}$/.test(line) &&
-      !/(experience|education|skill|github|linkedin|http|resume|summary)/i.test(line)
-    )  {
+      !/(experience|education|skill|github|linkedin|http|resume|summary)/i.test(
+        line,
+      )
+    ) {
       name = line.trim();
       break;
     }
@@ -152,15 +197,56 @@ function extractFields(text) {
 
   // Location: split each line on "|" so a contact line like
   // "City, State | phone | email | LinkedIn | GitHub" doesn't get discarded wholesale
-  const cities = ["bangalore", "bengaluru", "mumbai", "delhi", "pune", "chennai", "hyderabad", "kolkata", "noida", "gurgaon", "ahmedabad", "kochi", "coimbatore", "jaipur", "indore", "mysore", "trivandrum", "belagavi", "belgaum"];
-  const states = ["karnataka", "maharashtra", "tamil nadu", "delhi", "gujarat", "kerala", "telangana", "uttar pradesh"];
+  const cities = [
+    "bangalore",
+    "bengaluru",
+    "mumbai",
+    "delhi",
+    "pune",
+    "chennai",
+    "hyderabad",
+    "kolkata",
+    "noida",
+    "gurgaon",
+    "ahmedabad",
+    "kochi",
+    "coimbatore",
+    "jaipur",
+    "indore",
+    "mysore",
+    "trivandrum",
+    "belagavi",
+    "belgaum",
+  ];
+  const states = [
+    "karnataka",
+    "maharashtra",
+    "tamil nadu",
+    "delhi",
+    "gujarat",
+    "kerala",
+    "telangana",
+    "uttar pradesh",
+  ];
   let location = "Not mentioned";
   outer: for (const line of lines) {
     const segments = line.split("|").map((s) => s.trim());
     for (const seg of segments) {
       const l = seg.toLowerCase();
-      if (!seg || l.includes("github") || l.includes("linkedin") || l.includes("http") || l.includes("@") || /^\+?\d/.test(seg)) continue;
-      if (cities.some((c) => l.includes(c)) || states.some((s) => l.includes(s)) || l.includes("india")) {
+      if (
+        !seg ||
+        l.includes("github") ||
+        l.includes("linkedin") ||
+        l.includes("http") ||
+        l.includes("@") ||
+        /^\+?\d/.test(seg)
+      )
+        continue;
+      if (
+        cities.some((c) => l.includes(c)) ||
+        states.some((s) => l.includes(s)) ||
+        l.includes("india")
+      ) {
         location = seg.replace(/[:\-–—]/g, " ").trim();
         break outer;
       }
@@ -179,21 +265,31 @@ async function parseResumeBuffer(buffer) {
     const { name, email, phone, location } = extractFields(text);
     const sections = splitIntoSections(text);
 
-    const skillsSource = sections.skills && sections.skills.length > 15 ? sections.skills : text;
+    const skillsSource =
+      sections.skills && sections.skills.length > 15 ? sections.skills : text;
     const skills = extractSkills(skillsSource);
 
     let experienceYears = extractExplicitExperienceYears(text);
     if (experienceYears === null) {
       // Internships are intentionally excluded — only real Experience/Summary/Other sections count
       // toward experienceYears (and therefore toward tier).
-      const experienceOnlyText = [sections.summary, sections.experience, sections.other]
+      const experienceOnlyText = [
+        sections.summary,
+        sections.experience,
+        sections.other,
+      ]
         .filter(Boolean)
         .join("\n");
       experienceYears = estimateExperienceFromDateRanges(experienceOnlyText);
     }
 
     return {
-      name, email, phone, location, skills, experienceYears,
+      name,
+      email,
+      phone,
+      location,
+      skills,
+      experienceYears,
       sections: {
         summary: sections.summary || "",
         experience: sections.experience || "",
@@ -206,9 +302,20 @@ async function parseResumeBuffer(buffer) {
   } catch (err) {
     console.error("Resume parse failed:", err);
     return {
-      name: "Unknown", email: "", phone: "", location: "Not mentioned",
-      skills: [], experienceYears: 0,
-      sections: { summary: "", experience: "", internships: "", education: "", projects: "", certifications: "" },
+      name: "Unknown",
+      email: "",
+      phone: "",
+      location: "Not mentioned",
+      skills: [],
+      experienceYears: 0,
+      sections: {
+        summary: "",
+        experience: "",
+        internships: "",
+        education: "",
+        projects: "",
+        certifications: "",
+      },
     };
   }
 }
@@ -219,8 +326,16 @@ async function parseResumeFromLocalPath(filePath) {
 }
 
 async function parseResumeFromUrl(url) {
-  const response = await axios({ url, method: "GET", responseType: "arraybuffer" });
+  const response = await axios({
+    url,
+    method: "GET",
+    responseType: "arraybuffer",
+  });
   return parseResumeBuffer(Buffer.from(response.data));
 }
 
-module.exports = { parseResumeBuffer, parseResumeFromLocalPath, parseResumeFromUrl };
+module.exports = {
+  parseResumeBuffer,
+  parseResumeFromLocalPath,
+  parseResumeFromUrl,
+};

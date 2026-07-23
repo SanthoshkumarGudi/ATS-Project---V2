@@ -14,7 +14,7 @@
  *   6. Pure functions — easy to unit-test.
  */
 
-const SKILL_DICTIONARY = require("./SkillDictionary")
+const SKILL_DICTIONARY = require("./SkillDictionary");
 
 // ─────────────────────────────────────────────────────────────────
 // STEP 1 — TEXT NORMALIZER
@@ -33,7 +33,7 @@ const SKILL_DICTIONARY = require("./SkillDictionary")
 function normalizeText(text) {
   return text
     .toLowerCase()
-    .replace(/[/·•|–—,;()\[\]{}]/g, " ")   // separator characters → space
+    .replace(/[/·•|–—,;()\[\]{}]/g, " ") // separator characters → space
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -49,8 +49,7 @@ function normalizeText(text) {
  * We pre-compute this for every alias at startup (see buildIndex).
  */
 function normalizeAlias(alias) {
-  return normalizeText(alias)
-    .replace(/[.\-]/g, "");   // "node.js" → "nodejs", "asp.net" → "aspnet"
+  return normalizeText(alias).replace(/[.\-]/g, ""); // "node.js" → "nodejs", "asp.net" → "aspnet"
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -94,29 +93,35 @@ const ALIAS_INDEX = buildIndex(SKILL_DICTIONARY);
  */
 const ANCHORED_ALIASES = new Map([
   // "go" → only match when it is clearly a language reference
-  ["go",        /\b(?:golang|go\s+language|go\s+programming|written\s+in\s+go|proficient\s+in\s+go|experience\s+with\s+go)\b/i],
+  [
+    "go",
+    /\b(?:golang|go\s+language|go\s+programming|written\s+in\s+go|proficient\s+in\s+go|experience\s+with\s+go)\b/i,
+  ],
   // "r"  → only match "R programming", "R language", "R studio"
-  ["r",         /\b(?:r\s+programming|r\s+language|r\s+studio|rstudio|r\s+statistical)\b/i],
+  [
+    "r",
+    /\b(?:r\s+programming|r\s+language|r\s+studio|rstudio|r\s+statistical)\b/i,
+  ],
   // "c"  → only match "C programming", "C language", "ANSI C"
-  ["c",         /\b(?:c\s+programming|c\s+language|ansi\s+c)\b/i],
+  ["c", /\b(?:c\s+programming|c\s+language|ansi\s+c)\b/i],
   // "py" → only match if explicitly labelled
-  ["py",        /\bpython\b/i],
+  ["py", /\bpython\b/i],
   // "ml" → standalone "ml" is matched only when near context words
-  ["ml",        /\b(?:machine\s+learning|ml\s+model|ml\s+algorithm|ml\s+pipeline)\b/i],
+  ["ml", /\b(?:machine\s+learning|ml\s+model|ml\s+algorithm|ml\s+pipeline)\b/i],
   // "ts" → TypeScript abbreviation, only when labeled
-  ["ts",        /\btypescript\b/i],
+  ["ts", /\btypescript\b/i],
   // "ng" → Angular abbreviation
-  ["ng",        /\bangular\b/i],
+  ["ng", /\bangular\b/i],
   // "dl" → Deep Learning
-  ["dl",        /\bdeep\s+learning\b/i],
+  ["dl", /\bdeep\s+learning\b/i],
   // "cv" → Computer Vision (not curriculum vitae)
-  ["cv",        /\bcomputer\s+vision\b/i],
+  ["cv", /\bcomputer\s+vision\b/i],
   // "pm" → Product Manager context
-  ["pm",        /\bproduct\s+manag/i],
+  ["pm", /\bproduct\s+manag/i],
   // "ir" → Incident Response
-  ["ir",        /\bincident\s+response\b/i],
+  ["ir", /\bincident\s+response\b/i],
   // "bd" → Business Development
-  ["bd",        /\bbusiness\s+development\b/i],
+  ["bd", /\bbusiness\s+development\b/i],
 ]);
 
 // ─────────────────────────────────────────────────────────────────
@@ -172,7 +177,6 @@ function extractSkills(rawText) {
   const foundCanonicals = new Set();
 
   for (const [normalizedAlias, canonical] of ALIAS_INDEX) {
-
     // Already found this skill via another alias — skip
     if (foundCanonicals.has(canonical)) continue;
 

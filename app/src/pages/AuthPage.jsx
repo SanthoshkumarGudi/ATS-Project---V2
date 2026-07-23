@@ -101,7 +101,10 @@ export default function AuthPage() {
         setNeedsVerification(true);
         setError(resData.message);
       } else {
-        setError(resData?.message || (isLogin ? "Invalid credentials" : "Registration failed"));
+        setError(
+          resData?.message ||
+            (isLogin ? "Invalid credentials" : "Registration failed"),
+        );
       }
     } finally {
       setLoading(false);
@@ -112,12 +115,18 @@ export default function AuthPage() {
     setResendLoading(true);
     setResendMessage("");
     try {
-      const { data } = await axios.post(`${API_URL}/api/auth/resend-verification`, {
-        email: formData.email.toLowerCase().trim(),
-      });
+      const { data } = await axios.post(
+        `${API_URL}/api/auth/resend-verification`,
+        {
+          email: formData.email.toLowerCase().trim(),
+        },
+      );
       setResendMessage(data.message);
     } catch (err) {
-      setResendMessage(err.response?.data?.message || "Couldn't resend the email — please try again.");
+      setResendMessage(
+        err.response?.data?.message ||
+          "Couldn't resend the email — please try again.",
+      );
     } finally {
       setResendLoading(false);
     }
@@ -139,18 +148,42 @@ export default function AuthPage() {
     return (
       <Box
         sx={{
-          minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
-          background: "linear-gradient(135deg, #f0fdfa 0%, #e0f2fe 50%, #ede9fe 100%)", px: 2,
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background:
+            "linear-gradient(135deg, #f0fdfa 0%, #e0f2fe 50%, #ede9fe 100%)",
+          px: 2,
         }}
       >
         <Container maxWidth="xs">
-          <Paper elevation={0} sx={{ p: { xs: 3, sm: 4 }, borderRadius: 3, border: "1px solid", borderColor: "divider", textAlign: "center" }}>
-            <CheckCircle2 size={48} color="#15803d" style={{ marginBottom: 12 }} />
-            <Typography variant="h6" fontWeight={700} gutterBottom>Check your email</Typography>
-            <Typography color="text.secondary" sx={{ mb: 3 }}>
-              We've sent a verification link to <strong>{formData.email}</strong>. You'll need to verify before you can sign in.
+          <Paper
+            elevation={0}
+            sx={{
+              p: { xs: 3, sm: 4 },
+              borderRadius: 3,
+              border: "1px solid",
+              borderColor: "divider",
+              textAlign: "center",
+            }}
+          >
+            <CheckCircle2
+              size={48}
+              color="#15803d"
+              style={{ marginBottom: 12 }}
+            />
+            <Typography variant="h6" fontWeight={700} gutterBottom>
+              Check your email
             </Typography>
-            <Button variant="outlined" onClick={() => switchMode(true)}>Back to Sign in</Button>
+            <Typography color="text.secondary" sx={{ mb: 3 }}>
+              We've sent a verification link to{" "}
+              <strong>{formData.email}</strong>. You'll need to verify before
+              you can sign in.
+            </Typography>
+            <Button variant="outlined" onClick={() => switchMode(true)}>
+              Back to Sign in
+            </Button>
           </Paper>
         </Container>
       </Box>
@@ -223,7 +256,9 @@ export default function AuthPage() {
                     fontSize: 14,
                     fontWeight: active ? 600 : 400,
                     color: active ? "text.primary" : "text.secondary",
-                    backgroundColor: active ? "background.paper" : "transparent",
+                    backgroundColor: active
+                      ? "background.paper"
+                      : "transparent",
                     boxShadow: active ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
                     transition: "all 0.2s ease",
                     userSelect: "none",
@@ -246,7 +281,13 @@ export default function AuthPage() {
               <Button
                 fullWidth
                 variant="outlined"
-                startIcon={resendLoading ? <CircularProgress size={16} /> : <Mail size={16} />}
+                startIcon={
+                  resendLoading ? (
+                    <CircularProgress size={16} />
+                  ) : (
+                    <Mail size={16} />
+                  )
+                }
                 onClick={handleResend}
                 disabled={resendLoading}
                 sx={{ mb: resendMessage ? 1.5 : 0 }}
@@ -254,7 +295,14 @@ export default function AuthPage() {
                 Resend verification email
               </Button>
               {resendMessage && (
-                <Alert severity={resendMessage.toLowerCase().includes("resent") ? "success" : "warning"} sx={{ borderRadius: 2 }}>
+                <Alert
+                  severity={
+                    resendMessage.toLowerCase().includes("resent")
+                      ? "success"
+                      : "warning"
+                  }
+                  sx={{ borderRadius: 2 }}
+                >
                   {resendMessage}
                 </Alert>
               )}
@@ -278,7 +326,10 @@ export default function AuthPage() {
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <User size={18} color="var(--mui-palette-text-secondary, #6b7280)" />
+                      <User
+                        size={18}
+                        color="var(--mui-palette-text-secondary, #6b7280)"
+                      />
                     </InputAdornment>
                   ),
                 }}
@@ -300,7 +351,10 @@ export default function AuthPage() {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <Mail size={18} color="var(--mui-palette-text-secondary, #6b7280)" />
+                    <Mail
+                      size={18}
+                      color="var(--mui-palette-text-secondary, #6b7280)"
+                    />
                   </InputAdornment>
                 ),
               }}
@@ -318,12 +372,17 @@ export default function AuthPage() {
               error={!!fieldErrors.password}
               helperText={
                 fieldErrors.password ||
-                (!isLogin ? "Min 8 characters, include a letter and number" : "")
+                (!isLogin
+                  ? "Min 8 characters, include a letter and number"
+                  : "")
               }
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <Lock size={18} color="var(--mui-palette-text-secondary, #6b7280)" />
+                    <Lock
+                      size={18}
+                      color="var(--mui-palette-text-secondary, #6b7280)"
+                    />
                   </InputAdornment>
                 ),
                 endAdornment: (
@@ -332,7 +391,9 @@ export default function AuthPage() {
                       onClick={() => setShowPassword((v) => !v)}
                       edge="end"
                       size="small"
-                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
+                      }
                     >
                       {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </IconButton>
@@ -368,8 +429,8 @@ export default function AuthPage() {
               {loading
                 ? "Please wait…"
                 : isLogin
-                ? "Sign in"
-                : "Create account"}
+                  ? "Sign in"
+                  : "Create account"}
             </Button>
           </Box>
 
@@ -384,13 +445,18 @@ export default function AuthPage() {
             <GoogleLogin
               onSuccess={async (credentialResponse) => {
                 try {
-                  const { data } = await axios.post(`${API_URL}/api/auth/google`, {
-                    credential: credentialResponse.credential,
-                  });
+                  const { data } = await axios.post(
+                    `${API_URL}/api/auth/google`,
+                    {
+                      credential: credentialResponse.credential,
+                    },
+                  );
                   login(data.token, data.user);
                   window.location.href = "/";
                 } catch (err) {
-                  setError(err.response?.data?.message || "Google login failed");
+                  setError(
+                    err.response?.data?.message || "Google login failed",
+                  );
                 }
               }}
               onError={() => setError("Google login failed")}

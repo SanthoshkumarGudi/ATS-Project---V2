@@ -8,7 +8,7 @@ const candidateSchema = new mongoose.Schema(
     phone: { type: String },
     location: { type: String },
 
-    resumeUrl: { type: String, required: true },     // Cloudinary URL
+    resumeUrl: { type: String, required: true }, // Cloudinary URL
     resumePublicId: { type: String },
 
     skills: [{ type: String }],
@@ -43,7 +43,7 @@ const candidateSchema = new mongoose.Schema(
       ],
       default: "new",
     },
-      statusHistory: [
+    statusHistory: [
       {
         status: { type: String },
         changedAt: { type: Date, default: Date.now },
@@ -65,7 +65,11 @@ const candidateSchema = new mongoose.Schema(
       notes: { type: String },
     },
     convertedToEmployee: { type: Boolean, default: false },
-    employeeId: { type: mongoose.Schema.Types.ObjectId, ref: "Employee", default: null },
+    employeeId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Employee",
+      default: null,
+    },
   },
   { timestamps: true },
 );

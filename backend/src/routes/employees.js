@@ -35,7 +35,8 @@ router.get("/", protect, async (req, res) => {
 router.get("/:id", protect, async (req, res) => {
   try {
     const employee = await Employee.findById(req.params.id);
-    if (!employee) return res.status(404).json({ message: "Employee not found" });
+    if (!employee)
+      return res.status(404).json({ message: "Employee not found" });
     res.json(employee);
   } catch (err) {
     res.status(500).json({ message: "Server error" });
@@ -45,13 +46,27 @@ router.get("/:id", protect, async (req, res) => {
 // POST /api/employees — HR adds an existing employee manually (resume optional)
 router.post("/", protect, upload.single("resume"), async (req, res) => {
   try {
-    const { name, email, phone, department, currentRole, location, availability, notes } = req.body;
+    const {
+      name,
+      email,
+      phone,
+      department,
+      currentRole,
+      location,
+      availability,
+      notes,
+    } = req.body;
     if (!name) return res.status(400).json({ message: "Name is required" });
 
     let skills = req.body.skills
-      ? req.body.skills.split(",").map((s) => s.trim()).filter(Boolean)
+      ? req.body.skills
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean)
       : [];
-    let experienceYears = req.body.experienceYears ? parseFloat(req.body.experienceYears) : 0;
+    let experienceYears = req.body.experienceYears
+      ? parseFloat(req.body.experienceYears)
+      : 0;
     let resumeUrl, resumePublicId;
 
     if (req.file) {
@@ -63,10 +78,18 @@ router.post("/", protect, upload.single("resume"), async (req, res) => {
     }
 
     const employee = await Employee.create({
-      name, email, phone, department, currentRole, location,
-      skills, experienceYears,
+      name,
+      email,
+      phone,
+      department,
+      currentRole,
+      location,
+      skills,
+      experienceYears,
       availability: availability || "available",
-      resumeUrl, resumePublicId, notes,
+      resumeUrl,
+      resumePublicId,
+      notes,
     });
 
     res.status(201).json({ message: "Employee added", employee });
@@ -82,22 +105,30 @@ router.post("/from-candidate/:candidateId", protect, async (req, res) => {
   try {
     const { department, currentRole } = req.body;
     if (!department || !currentRole) {
-      return res.status(400).json({ message: "Department and Current Role are required" });
+      return res
+        .status(400)
+        .json({ message: "Department and Current Role are required" });
     }
 
     const candidate = await Candidate.findById(req.params.candidateId);
-    if (!candidate) return res.status(404).json({ message: "Candidate not found" });
+    if (!candidate)
+      return res.status(404).json({ message: "Candidate not found" });
 
     if (candidate.convertedToEmployee) {
       return res.status(400).json({
-        message: "This candidate has already been added to the Internal Portal.",
+        message:
+          "This candidate has already been added to the Internal Portal.",
         employeeId: candidate.employeeId,
       });
     }
 
-    if (!candidate.onboarding?.documentsCollected || !candidate.onboarding?.onboardingDate) {
+    if (
+      !candidate.onboarding?.documentsCollected ||
+      !candidate.onboarding?.onboardingDate
+    ) {
       return res.status(400).json({
-        message: "Onboarding isn't complete yet — documents must be collected and an onboarding date set first.",
+        message:
+          "Onboarding isn't complete yet — documents must be collected and an onboarding date set first.",
       });
     }
 
@@ -131,13 +162,28 @@ router.post("/from-candidate/:candidateId", protect, async (req, res) => {
 // PATCH /api/employees/:id — update availability/skills/notes/etc.
 router.patch("/:id", protect, async (req, res) => {
   try {
-    const allowed = ["name", "email", "phone", "department", "currentRole", "location", "skills", "experienceYears", "availability", "notes"];
+    const allowed = [
+      "name",
+      "email",
+      "phone",
+      "department",
+      "currentRole",
+      "location",
+      "skills",
+      "experienceYears",
+      "availability",
+      "notes",
+    ];
     const updates = {};
     for (const key of allowed) {
       if (req.body[key] !== undefined) updates[key] = req.body[key];
     }
-    const employee = await Employee.findByIdAndUpdate(req.params.id, updates, { new: true, runValidators: true });
-    if (!employee) return res.status(404).json({ message: "Employee not found" });
+    const employee = await Employee.findByIdAndUpdate(req.params.id, updates, {
+      new: true,
+      runValidators: true,
+    });
+    if (!employee)
+      return res.status(404).json({ message: "Employee not found" });
     res.json({ message: "Employee updated", employee });
   } catch (err) {
     console.error("Update employee error:", err);
@@ -149,7 +195,8 @@ router.patch("/:id", protect, async (req, res) => {
 router.delete("/:id", protect, async (req, res) => {
   try {
     const employee = await Employee.findByIdAndDelete(req.params.id);
-    if (!employee) return res.status(404).json({ message: "Employee not found" });
+    if (!employee)
+      return res.status(404).json({ message: "Employee not found" });
     res.json({ message: "Employee removed" });
   } catch (err) {
     res.status(500).json({ message: "Server error" });

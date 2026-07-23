@@ -1,8 +1,19 @@
 // src/pages/InternalPortal.jsx
 import { useEffect, useState, useCallback } from "react";
 import {
-  Box, Container, Typography, TextField, MenuItem, Grid, Card, CardContent,
-  Chip, Stack, InputAdornment, CircularProgress, Button,
+  Box,
+  Container,
+  Typography,
+  TextField,
+  MenuItem,
+  Grid,
+  Card,
+  CardContent,
+  Chip,
+  Stack,
+  InputAdornment,
+  CircularProgress,
+  Button,
 } from "@mui/material";
 import { Search, Plus } from "lucide-react";
 import axios from "../utils/api";
@@ -43,14 +54,26 @@ export default function InternalPortal() {
 
   return (
     <Container maxWidth="lg" sx={{ py: 5 }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="flex-start" flexWrap="wrap" sx={{ mb: 1 }}>
+      <Stack
+        direction="row"
+        justifyContent="space-between"
+        alignItems="flex-start"
+        flexWrap="wrap"
+        sx={{ mb: 1 }}
+      >
         <Box>
-          <Typography variant="h4" fontWeight={800}>Internal Portal</Typography>
+          <Typography variant="h4" fontWeight={800}>
+            Internal Portal
+          </Typography>
           <Typography color="text.secondary">
             Search current employees for internal mobility.
           </Typography>
         </Box>
-        <Button variant="contained" startIcon={<Plus size={18} />} onClick={() => setAddOpen(true)}>
+        <Button
+          variant="contained"
+          startIcon={<Plus size={18} />}
+          onClick={() => setAddOpen(true)}
+        >
           Add Employee
         </Button>
       </Stack>
@@ -62,10 +85,20 @@ export default function InternalPortal() {
           onChange={(e) => setQ(e.target.value)}
           fullWidth
           InputProps={{
-            startAdornment: <InputAdornment position="start"><Search size={18} /></InputAdornment>,
+            startAdornment: (
+              <InputAdornment position="start">
+                <Search size={18} />
+              </InputAdornment>
+            ),
           }}
         />
-        <TextField select label="Availability" value={availability} onChange={(e) => setAvailability(e.target.value)} sx={{ minWidth: 180 }}>
+        <TextField
+          select
+          label="Availability"
+          value={availability}
+          onChange={(e) => setAvailability(e.target.value)}
+          sx={{ minWidth: 180 }}
+        >
           <MenuItem value="">All</MenuItem>
           <MenuItem value="available">Available</MenuItem>
           <MenuItem value="on-bench">On Bench</MenuItem>
@@ -74,7 +107,9 @@ export default function InternalPortal() {
       </Stack>
 
       {loading ? (
-        <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}><CircularProgress /></Box>
+        <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
+          <CircularProgress />
+        </Box>
       ) : employees.length === 0 ? (
         <Typography color="text.secondary" sx={{ textAlign: "center", py: 8 }}>
           No employees in the directory yet — add your first one.
@@ -82,23 +117,64 @@ export default function InternalPortal() {
       ) : (
         <Grid container spacing={2}>
           {employees.map((e) => {
-            const style = AVAILABILITY_STYLES[e.availability] || AVAILABILITY_STYLES.available;
+            const style =
+              AVAILABILITY_STYLES[e.availability] ||
+              AVAILABILITY_STYLES.available;
             return (
               <Grid item xs={12} sm={6} md={4} key={e._id}>
                 <Card>
                   <CardContent>
-                    <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-                      <Typography variant="h6" fontWeight={700}>{e.name}</Typography>
-                      <Chip size="small" label={style.label} sx={{ bgcolor: style.bg, color: style.color, fontWeight: 600 }} />
+                    <Stack
+                      direction="row"
+                      justifyContent="space-between"
+                      alignItems="flex-start"
+                    >
+                      <Typography variant="h6" fontWeight={700}>
+                        {e.name}
+                      </Typography>
+                      <Chip
+                        size="small"
+                        label={style.label}
+                        sx={{
+                          bgcolor: style.bg,
+                          color: style.color,
+                          fontWeight: 600,
+                        }}
+                      />
                     </Stack>
-                    <Typography variant="body2" color="text.secondary">{e.currentRole} {e.department && `· ${e.department}`}</Typography>
-                    <Typography variant="body2" sx={{ mb: 1 }}>{e.experienceYears || 0} yrs experience</Typography>
-                    <Stack direction="row" spacing={0.5} flexWrap="wrap" sx={{ gap: 0.5, mb: 1 }}>
-                      {(e.skills || []).slice(0, 5).map((s) => <Chip key={s} label={s} size="small" variant="outlined" />)}
+                    <Typography variant="body2" color="text.secondary">
+                      {e.currentRole} {e.department && `· ${e.department}`}
+                    </Typography>
+                    <Typography variant="body2" sx={{ mb: 1 }}>
+                      {e.experienceYears || 0} yrs experience
+                    </Typography>
+                    <Stack
+                      direction="row"
+                      spacing={0.5}
+                      flexWrap="wrap"
+                      sx={{ gap: 0.5, mb: 1 }}
+                    >
+                      {(e.skills || []).slice(0, 5).map((s) => (
+                        <Chip
+                          key={s}
+                          label={s}
+                          size="small"
+                          variant="outlined"
+                        />
+                      ))}
                     </Stack>
-                    {e.email && <Typography variant="caption" color="text.secondary">{e.email}</Typography>}
+                    {e.email && (
+                      <Typography variant="caption" color="text.secondary">
+                        {e.email}
+                      </Typography>
+                    )}
                     {e.resumeUrl && (
-                      <Button size="small" href={e.resumeUrl} target="_blank" sx={{ display: "block", mt: 1, textTransform: "none" }}>
+                      <Button
+                        size="small"
+                        href={e.resumeUrl}
+                        target="_blank"
+                        sx={{ display: "block", mt: 1, textTransform: "none" }}
+                      >
                         View Resume
                       </Button>
                     )}
@@ -110,7 +186,11 @@ export default function InternalPortal() {
         </Grid>
       )}
 
-      <AddEmployeeModal open={addOpen} onClose={() => setAddOpen(false)} onSuccess={fetchEmployees} />
+      <AddEmployeeModal
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        onSuccess={fetchEmployees}
+      />
     </Container>
   );
 }

@@ -13,7 +13,9 @@ async function requestAvailability(candidate, { roundLabel } = {}) {
   const token = crypto.randomBytes(32).toString("hex");
   candidate.availability = candidate.availability || {};
   candidate.availability.token = token;
-  candidate.availability.tokenExpires = new Date(Date.now() + AVAILABILITY_TOKEN_VALID_DAYS * 24 * 60 * 60 * 1000);
+  candidate.availability.tokenExpires = new Date(
+    Date.now() + AVAILABILITY_TOKEN_VALID_DAYS * 24 * 60 * 60 * 1000,
+  );
   candidate.availability.requestedAt = new Date();
   // Clear the previous round's answer — we need fresh slots for what's next.
   candidate.availability.submittedAt = undefined;
@@ -22,7 +24,9 @@ async function requestAvailability(candidate, { roundLabel } = {}) {
   await candidate.save();
 
   if (!candidate.email) {
-    console.warn(`⚠️  No email on file for ${candidate.name} — availability request not sent.`);
+    console.warn(
+      `⚠️  No email on file for ${candidate.name} — availability request not sent.`,
+    );
     return { sent: false, reason: "no-email" };
   }
 

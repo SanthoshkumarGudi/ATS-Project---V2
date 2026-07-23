@@ -2,8 +2,18 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Box, Typography, Button, Stack, IconButton, Drawer,
-  List, ListItem, ListItemButton, ListItemText, Divider, useMediaQuery,
+  Box,
+  Typography,
+  Button,
+  Stack,
+  IconButton,
+  Drawer,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
+  Divider,
+  useMediaQuery,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import CloseIcon from "@mui/icons-material/Close";
@@ -28,7 +38,15 @@ export const Navbar = () => {
   ];
 
   return (
-    <Box sx={{ width: "95%", bgcolor: "#f8f9fb", px: { xs: 2, md: 6 }, py: 2, borderBottom: "1px solid #eee" }}>
+    <Box
+      sx={{
+        width: "95%",
+        bgcolor: "#f8f9fb",
+        px: { xs: 2, md: 6 },
+        py: 2,
+        borderBottom: "1px solid #eee",
+      }}
+    >
       <Stack direction="row" justifyContent="space-between">
         <Stack direction="row" alignItems="center" spacing={1}>
           <Typography
@@ -48,12 +66,26 @@ export const Navbar = () => {
 
         {isMobile ? (
           <>
-            <IconButton onClick={() => setDrawerOpen(true)}><MenuIcon /></IconButton>
-            <Drawer anchor="right" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
+            <IconButton onClick={() => setDrawerOpen(true)}>
+              <MenuIcon />
+            </IconButton>
+            <Drawer
+              anchor="right"
+              open={drawerOpen}
+              onClose={() => setDrawerOpen(false)}
+            >
               <Box sx={{ width: 260 }}>
-                <Box sx={{ p: 2, display: "flex", justifyContent: "space-between" }}>
+                <Box
+                  sx={{
+                    p: 2,
+                    display: "flex",
+                    justifyContent: "space-between",
+                  }}
+                >
                   <Typography fontWeight="bold">Menu</Typography>
-                  <IconButton onClick={() => setDrawerOpen(false)}><CloseIcon /></IconButton>
+                  <IconButton onClick={() => setDrawerOpen(false)}>
+                    <CloseIcon />
+                  </IconButton>
                 </Box>
                 <Divider />
                 <List>
@@ -77,20 +109,33 @@ export const Navbar = () => {
         ) : (
           <Stack direction="row" spacing={3} alignItems="center">
             <Stack direction="row" spacing={3}>
-              {navItems.filter((i) => !i.isLogout).map((item, i) => (
-                <Typography
-                  key={i}
-                  onClick={() => navigate(item.path)}
-                  sx={{ cursor: "pointer", color: "#555", fontWeight: 500, "&:hover": { color: "#000" } }}
-                >
-                  {item.label}
-                </Typography>
-              ))}
+              {navItems
+                .filter((i) => !i.isLogout)
+                .map((item, i) => (
+                  <Typography
+                    key={i}
+                    onClick={() => navigate(item.path)}
+                    sx={{
+                      cursor: "pointer",
+                      color: "#555",
+                      fontWeight: 500,
+                      "&:hover": { color: "#000" },
+                    }}
+                  >
+                    {item.label}
+                  </Typography>
+                ))}
             </Stack>
             <Button
               variant="contained"
               onClick={() => logout()}
-              sx={{ textTransform: "none", borderRadius: "999px", px: 3, bgcolor: "#0f172a", "&:hover": { bgcolor: "#020617" } }}
+              sx={{
+                textTransform: "none",
+                borderRadius: "999px",
+                px: 3,
+                bgcolor: "#0f172a",
+                "&:hover": { bgcolor: "#020617" },
+              }}
             >
               Logout
             </Button>

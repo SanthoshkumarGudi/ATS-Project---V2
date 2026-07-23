@@ -19,7 +19,11 @@ const employeeSchema = new mongoose.Schema(
     resumeUrl: { type: String },
     resumePublicId: { type: String },
     notes: { type: String },
-    sourceCandidate: { type: mongoose.Schema.Types.ObjectId, ref: "Candidate", default: null },
+    sourceCandidate: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Candidate",
+      default: null,
+    },
   },
   { timestamps: true },
 );

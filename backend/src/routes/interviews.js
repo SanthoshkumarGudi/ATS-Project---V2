@@ -7,7 +7,11 @@ const Candidate = require("../models/Candidate");
 const { protect } = require("../middleware/auth");
 const { sendInterviewEmail } = require("../utils/emailService");
 const { createGoogleMeetEvent } = require("../utils/googleMeetService");
-const { FIXED_SEQUENCE, roundLabel, computeNextRound } = require("../utils/interviewFlow");
+const {
+  FIXED_SEQUENCE,
+  roundLabel,
+  computeNextRound,
+} = require("../utils/interviewFlow");
 const { requestAvailability } = require("../utils/availabilityService");
 
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
@@ -26,13 +30,23 @@ function generateFeedbackToken() {
 // ============================================================
 router.post("/", protect, async (req, res) => {
   try {
-    const { candidateId, scheduledAt, interviewerName, interviewerEmail, roundType: manualRoundType } = req.body;
+    const {
+      candidateId,
+      scheduledAt,
+      interviewerName,
+      interviewerEmail,
+      roundType: manualRoundType,
+    } = req.body;
 
     const candidate = await Candidate.findById(candidateId);
-    if (!candidate) return res.status(404).json({ message: "Candidate not found" });
+    if (!candidate)
+      return res.status(404).json({ message: "Candidate not found" });
 
     // Block scheduling ANY new round while one is still pending, regardless of type.
-    const pendingInterview = await Interview.findOne({ candidate: candidateId, status: "scheduled" });
+    const pendingInterview = await Interview.findOne({
+      candidate: candidateId,
+      status: "scheduled",
+    });
     if (pendingInterview) {
       return res.status(400).json({
         success: false,
@@ -47,10 +61,19 @@ router.post("/", protect, async (req, res) => {
       // straight to Manager, run Tech + Manager only, repeat a stage out of sequence, etc.
       // Round number is still auto-computed (from ALL past interviews of that type, any
       // status) so repeats are labeled correctly even when used out of the normal sequence.
-      const allOfType = await Interview.find({ candidate: candidateId, roundType: manualRoundType }).sort({ roundNumber: -1 });
-      next = { roundType: manualRoundType, roundNumber: allOfType.length ? (allOfType[0].roundNumber || 1) + 1 : 1 };
+      const allOfType = await Interview.find({
+        candidate: candidateId,
+        roundType: manualRoundType,
+      }).sort({ roundNumber: -1 });
+      next = {
+        roundType: manualRoundType,
+        roundNumber: allOfType.length ? (allOfType[0].roundNumber || 1) + 1 : 1,
+      };
     } else {
-      const completed = await Interview.find({ candidate: candidateId, status: "completed" }).sort({ scheduledAt: 1 });
+      const completed = await Interview.find({
+        candidate: candidateId,
+        status: "completed",
+      }).sort({ scheduledAt: 1 });
       next = computeNextRound(completed);
     }
 
@@ -76,12 +99,15 @@ router.post("/", protect, async (req, res) => {
 
     if (!interviewerEmail) {
       return res.status(400).json({
-        message: "Interviewer email is required — feedback can only be submitted via the link sent to that email.",
+        message:
+          "Interviewer email is required — feedback can only be submitted via the link sent to that email.",
       });
     }
 
     const feedbackToken = generateFeedbackToken();
-    const feedbackTokenExpires = new Date(Date.now() + FEEDBACK_TOKEN_VALID_DAYS * 24 * 60 * 60 * 1000);
+    const feedbackTokenExpires = new Date(
+      Date.now() + FEEDBACK_TOKEN_VALID_DAYS * 24 * 60 * 60 * 1000,
+    );
     const label = roundLabel(next.roundType, next.roundNumber);
 
     const interview = new Interview({
@@ -96,7 +122,9 @@ router.post("/", protect, async (req, res) => {
     });
 
     const startTime = new Date(scheduledAt).toISOString();
-    const endTime = new Date(new Date(scheduledAt).getTime() + 60 * 60 * 1000).toISOString();
+    const endTime = new Date(
+      new Date(scheduledAt).getTime() + 60 * 60 * 1000,
+    ).toISOString();
     const { meetingLink } = await createGoogleMeetEvent({
       summary: `${label} - ${candidate.name}`,
       description: `${label} interview for candidate ${candidate.name}`,
@@ -130,9 +158,17 @@ router.post("/", protect, async (req, res) => {
     `;
 
     if (candidate.email) {
-      await sendInterviewEmail(candidate.email, `Interview Scheduled - ${label}`, emailHTMLForCandidate);
+      await sendInterviewEmail(
+        candidate.email,
+        `Interview Scheduled - ${label}`,
+        emailHTMLForCandidate,
+      );
     }
-    await sendInterviewEmail(interviewerEmail, `Interview Scheduled — feedback link inside`, emailHTMLForInterviewer);
+    await sendInterviewEmail(
+      interviewerEmail,
+      `Interview Scheduled — feedback link inside`,
+      emailHTMLForInterviewer,
+    );
 
     res.status(201).json({
       success: true,
@@ -142,7 +178,9 @@ router.post("/", protect, async (req, res) => {
     });
   } catch (err) {
     console.error("Interview scheduling error:", err);
-    res.status(500).json({ message: "Failed to schedule interview", error: err.message });
+    res
+      .status(500)
+      .json({ message: "Failed to schedule interview", error: err.message });
   }
 });
 
@@ -153,8 +191,11 @@ router.put("/:id/reschedule", protect, async (req, res) => {
   try {
     const { scheduledAt, interviewerName, interviewerEmail } = req.body;
 
-    const interview = await Interview.findById(req.params.id).populate("candidate");
-    if (!interview) return res.status(404).json({ message: "Interview not found" });
+    const interview = await Interview.findById(req.params.id).populate(
+      "candidate",
+    );
+    if (!interview)
+      return res.status(404).json({ message: "Interview not found" });
 
     interview.scheduledAt = new Date(scheduledAt);
     if (interviewerName) interview.interviewerName = interviewerName;
@@ -162,7 +203,9 @@ router.put("/:id/reschedule", protect, async (req, res) => {
 
     const label = roundLabel(interview.roundType, interview.roundNumber);
     const startTime = new Date(scheduledAt).toISOString();
-    const endTime = new Date(new Date(scheduledAt).getTime() + 60 * 60 * 1000).toISOString();
+    const endTime = new Date(
+      new Date(scheduledAt).getTime() + 60 * 60 * 1000,
+    ).toISOString();
     const { meetingLink } = await createGoogleMeetEvent({
       summary: `Rescheduled: ${label} - ${interview.candidate.name}`,
       description: `Rescheduled interview`,
@@ -182,16 +225,26 @@ router.put("/:id/reschedule", protect, async (req, res) => {
       <p style="margin-top:20px;">Your feedback link is unchanged: <a href="${feedbackUrl}">${feedbackUrl}</a></p>
     `;
     if (candidate?.email) {
-      await sendInterviewEmail(candidate.email, `Interview Rescheduled - ${label}`, emailHTML);
+      await sendInterviewEmail(
+        candidate.email,
+        `Interview Rescheduled - ${label}`,
+        emailHTML,
+      );
     }
     if (interview.interviewerEmail) {
-      await sendInterviewEmail(interview.interviewerEmail, `Interview Rescheduled`, emailHTML);
+      await sendInterviewEmail(
+        interview.interviewerEmail,
+        `Interview Rescheduled`,
+        emailHTML,
+      );
     }
 
     res.json({ message: "Interview rescheduled successfully", interview });
   } catch (err) {
     console.error("Error rescheduling interview:", err);
-    res.status(500).json({ message: "Failed to reschedule interview", error: err.message });
+    res
+      .status(500)
+      .json({ message: "Failed to reschedule interview", error: err.message });
   }
 });
 
@@ -200,17 +253,28 @@ router.put("/:id/reschedule", protect, async (req, res) => {
 // ============================================================
 router.post("/:id/resend-feedback-link", protect, async (req, res) => {
   try {
-    const interview = await Interview.findById(req.params.id).populate("candidate");
-    if (!interview) return res.status(404).json({ message: "Interview not found" });
+    const interview = await Interview.findById(req.params.id).populate(
+      "candidate",
+    );
+    if (!interview)
+      return res.status(404).json({ message: "Interview not found" });
     if (!interview.interviewerEmail) {
-      return res.status(400).json({ message: "This interview has no interviewer email on file." });
+      return res
+        .status(400)
+        .json({ message: "This interview has no interviewer email on file." });
     }
     if (interview.status === "completed") {
-      return res.status(400).json({ message: "Feedback has already been submitted for this round." });
+      return res
+        .status(400)
+        .json({
+          message: "Feedback has already been submitted for this round.",
+        });
     }
 
     interview.feedbackToken = generateFeedbackToken();
-    interview.feedbackTokenExpires = new Date(Date.now() + FEEDBACK_TOKEN_VALID_DAYS * 24 * 60 * 60 * 1000);
+    interview.feedbackTokenExpires = new Date(
+      Date.now() + FEEDBACK_TOKEN_VALID_DAYS * 24 * 60 * 60 * 1000,
+    );
     await interview.save();
 
     const label = roundLabel(interview.roundType, interview.roundNumber);
@@ -235,13 +299,30 @@ router.post("/:id/resend-feedback-link", protect, async (req, res) => {
 // ============================================================
 router.get("/feedback/:token", async (req, res) => {
   try {
-    const interview = await Interview.findOne({ feedbackToken: req.params.token }).populate("candidate");
-    if (!interview) return res.status(404).json({ message: "This feedback link is invalid." });
+    const interview = await Interview.findOne({
+      feedbackToken: req.params.token,
+    }).populate("candidate");
+    if (!interview)
+      return res
+        .status(404)
+        .json({ message: "This feedback link is invalid." });
     if (interview.status === "completed") {
-      return res.status(400).json({ message: "Feedback has already been submitted for this round." });
+      return res
+        .status(400)
+        .json({
+          message: "Feedback has already been submitted for this round.",
+        });
     }
-    if (interview.feedbackTokenExpires && interview.feedbackTokenExpires < new Date()) {
-      return res.status(400).json({ message: "This feedback link has expired. Ask the Hiring Manager to resend it." });
+    if (
+      interview.feedbackTokenExpires &&
+      interview.feedbackTokenExpires < new Date()
+    ) {
+      return res
+        .status(400)
+        .json({
+          message:
+            "This feedback link has expired. Ask the Hiring Manager to resend it.",
+        });
     }
 
     res.json({
@@ -271,20 +352,50 @@ router.get("/feedback/:token", async (req, res) => {
 // ============================================================
 router.post("/feedback/:token", async (req, res) => {
   try {
-    const { performance, notes, recommendation, negotiatedSalary, noticePeriod } = req.body;
-    if (!recommendation) return res.status(400).json({ message: "Recommendation is required" });
+    const {
+      performance,
+      notes,
+      recommendation,
+      negotiatedSalary,
+      noticePeriod,
+    } = req.body;
+    if (!recommendation)
+      return res.status(400).json({ message: "Recommendation is required" });
 
-    const interview = await Interview.findOne({ feedbackToken: req.params.token }).populate("candidate");
-    if (!interview) return res.status(404).json({ message: "This feedback link is invalid." });
+    const interview = await Interview.findOne({
+      feedbackToken: req.params.token,
+    }).populate("candidate");
+    if (!interview)
+      return res
+        .status(404)
+        .json({ message: "This feedback link is invalid." });
     if (interview.status === "completed") {
-      return res.status(400).json({ message: "Feedback has already been submitted for this round." });
+      return res
+        .status(400)
+        .json({
+          message: "Feedback has already been submitted for this round.",
+        });
     }
-    if (interview.feedbackTokenExpires && interview.feedbackTokenExpires < new Date()) {
-      return res.status(400).json({ message: "This feedback link has expired. Ask the Hiring Manager to resend it." });
+    if (
+      interview.feedbackTokenExpires &&
+      interview.feedbackTokenExpires < new Date()
+    ) {
+      return res
+        .status(400)
+        .json({
+          message:
+            "This feedback link has expired. Ask the Hiring Manager to resend it.",
+        });
     }
 
     interview.status = "completed";
-    interview.feedback = { performance, notes, recommendation, negotiatedSalary, noticePeriod };
+    interview.feedback = {
+      performance,
+      notes,
+      recommendation,
+      negotiatedSalary,
+      noticePeriod,
+    };
     interview.feedbackAt = new Date();
     interview.feedbackToken = undefined;
     interview.feedbackTokenExpires = undefined;
@@ -299,17 +410,26 @@ router.post("/feedback/:token", async (req, res) => {
       candidate.setStatus(`${interview.roundType}-round`);
     } else if (recommendation === "proceed") {
       const idx = FIXED_SEQUENCE.indexOf(interview.roundType);
-      candidate.setStatus(idx === FIXED_SEQUENCE.length - 1 ? "final-evaluation" : `${FIXED_SEQUENCE[idx + 1]}-round`);
+      candidate.setStatus(
+        idx === FIXED_SEQUENCE.length - 1
+          ? "final-evaluation"
+          : `${FIXED_SEQUENCE[idx + 1]}-round`,
+      );
     }
     await candidate.save();
 
     // If there's another round to schedule (repeat, or proceed to a non-final stage),
     // ask the candidate for fresh availability scoped to that round.
     if (recommendation === "proceed" || recommendation === "repeat") {
-      const completed = await Interview.find({ candidate: candidate._id, status: "completed" }).sort({ scheduledAt: 1 });
+      const completed = await Interview.find({
+        candidate: candidate._id,
+        status: "completed",
+      }).sort({ scheduledAt: 1 });
       const upcoming = computeNextRound(completed);
       if (upcoming) {
-        await requestAvailability(candidate, { roundLabel: roundLabel(upcoming.roundType, upcoming.roundNumber) });
+        await requestAvailability(candidate, {
+          roundLabel: roundLabel(upcoming.roundType, upcoming.roundNumber),
+        });
       }
     }
 
@@ -325,7 +445,9 @@ router.post("/feedback/:token", async (req, res) => {
 // ============================================================
 router.get("/candidate/:candidateId", protect, async (req, res) => {
   try {
-    const interviews = await Interview.find({ candidate: req.params.candidateId }).sort({ scheduledAt: 1 });
+    const interviews = await Interview.find({
+      candidate: req.params.candidateId,
+    }).sort({ scheduledAt: 1 });
     res.json(interviews);
   } catch (err) {
     res.status(500).json({ message: "Server error" });
@@ -337,7 +459,9 @@ router.get("/candidate/:candidateId", protect, async (req, res) => {
 // ============================================================
 router.get("/rejected", protect, async (req, res) => {
   try {
-    const rejectedInterviews = await Interview.find({ "feedback.recommendation": "reject" })
+    const rejectedInterviews = await Interview.find({
+      "feedback.recommendation": "reject",
+    })
       .populate("candidate", "name email tier skills")
       .sort({ updatedAt: -1 })
       .lean();
@@ -354,7 +478,9 @@ router.get("/rejected", protect, async (req, res) => {
     res.json(results);
   } catch (err) {
     console.error("Error fetching rejected candidates:", err);
-    res.status(500).json({ message: "Server error while fetching rejected candidates" });
+    res
+      .status(500)
+      .json({ message: "Server error while fetching rejected candidates" });
   }
 });
 

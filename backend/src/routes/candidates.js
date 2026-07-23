@@ -17,7 +17,12 @@ router.get("/", protect, async (req, res) => {
     if (status) filter.status = status;
     if (skill) filter.skills = { $regex: skill, $options: "i" };
 
-    const searchTerms = q ? q.split(",").map((s) => s.trim()).filter(Boolean) : [];
+    const searchTerms = q
+      ? q
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : [];
     if (searchTerms.length > 0) {
       const skillRegexes = searchTerms.map((term) => new RegExp(term, "i"));
       filter.$or = [
@@ -27,19 +32,29 @@ router.get("/", protect, async (req, res) => {
       ];
     }
 
-    let candidates = await Candidate.find(filter).sort({ createdAt: -1 }).lean();
+    let candidates = await Candidate.find(filter)
+      .sort({ createdAt: -1 })
+      .lean();
 
     if (searchTerms.length > 0) {
       const lowerTerms = searchTerms.map((t) => t.toLowerCase());
       candidates = candidates
         .map((c) => {
-          const candidateSkillsLower = (c.skills || []).map((s) => s.toLowerCase());
+          const candidateSkillsLower = (c.skills || []).map((s) =>
+            s.toLowerCase(),
+          );
           const matchCount = lowerTerms.filter((term) =>
-            candidateSkillsLower.some((cs) => cs.includes(term) || term.includes(cs))
+            candidateSkillsLower.some(
+              (cs) => cs.includes(term) || term.includes(cs),
+            ),
           ).length;
           return { ...c, matchCount };
         })
-        .sort((a, b) => b.matchCount - a.matchCount || new Date(b.createdAt) - new Date(a.createdAt));
+        .sort(
+          (a, b) =>
+            b.matchCount - a.matchCount ||
+            new Date(b.createdAt) - new Date(a.createdAt),
+        );
     }
 
     res.json(candidates);
@@ -53,7 +68,8 @@ router.get("/", protect, async (req, res) => {
 router.get("/:id", protect, async (req, res) => {
   try {
     const candidate = await Candidate.findById(req.params.id);
-    if (!candidate) return res.status(404).json({ message: "Candidate not found" });
+    if (!candidate)
+      return res.status(404).json({ message: "Candidate not found" });
     res.json(candidate);
   } catch (err) {
     res.status(500).json({ message: "Server error" });
@@ -64,13 +80,23 @@ router.get("/:id", protect, async (req, res) => {
 router.get("/:id/next-round", protect, async (req, res) => {
   try {
     const candidate = await Candidate.findById(req.params.id);
-    if (!candidate) return res.status(404).json({ message: "Candidate not found" });
+    if (!candidate)
+      return res.status(404).json({ message: "Candidate not found" });
 
-    const completed = await Interview.find({ candidate: req.params.id, status: "completed" }).sort({ scheduledAt: 1 });
+    const completed = await Interview.find({
+      candidate: req.params.id,
+      status: "completed",
+    }).sort({ scheduledAt: 1 });
     const next = computeNextRound(completed);
 
     res.json({
-      next: next ? { roundType: next.roundType, roundNumber: next.roundNumber, label: roundLabel(next.roundType, next.roundNumber) } : null,
+      next: next
+        ? {
+            roundType: next.roundType,
+            roundNumber: next.roundNumber,
+            label: roundLabel(next.roundType, next.roundNumber),
+          }
+        : null,
     });
   } catch (err) {
     console.error("Next-round lookup error:", err);
@@ -83,9 +109,17 @@ router.get("/:id/next-round", protect, async (req, res) => {
 router.patch("/:id", protect, async (req, res) => {
   try {
     const candidate = await Candidate.findById(req.params.id);
-    if (!candidate) return res.status(404).json({ message: "Candidate not found" });
+    if (!candidate)
+      return res.status(404).json({ message: "Candidate not found" });
 
-    const allowed = ["tier", "tags", "experienceYears", "name", "email", "phone"];
+    const allowed = [
+      "tier",
+      "tags",
+      "experienceYears",
+      "name",
+      "email",
+      "phone",
+    ];
     for (const key of allowed) {
       if (req.body[key] !== undefined) candidate[key] = req.body[key];
     }
@@ -95,7 +129,8 @@ router.patch("/:id", protect, async (req, res) => {
 
     let justShortlisted = false;
     if (req.body.status !== undefined) {
-      justShortlisted = req.body.status === "shortlisted" && candidate.status !== "shortlisted";
+      justShortlisted =
+        req.body.status === "shortlisted" && candidate.status !== "shortlisted";
       candidate.setStatus(req.body.status);
     }
 
@@ -118,13 +153,19 @@ router.patch("/:id", protect, async (req, res) => {
 router.post("/:id/request-availability", protect, async (req, res) => {
   try {
     const candidate = await Candidate.findById(req.params.id);
-    if (!candidate) return res.status(404).json({ message: "Candidate not found" });
+    if (!candidate)
+      return res.status(404).json({ message: "Candidate not found" });
 
-    const completed = await Interview.find({ candidate: candidate._id, status: "completed" }).sort({ scheduledAt: 1 });
+    const completed = await Interview.find({
+      candidate: candidate._id,
+      status: "completed",
+    }).sort({ scheduledAt: 1 });
     const next = computeNextRound(completed);
 
     await requestAvailability(candidate, {
-      roundLabel: next ? roundLabel(next.roundType, next.roundNumber) : undefined,
+      roundLabel: next
+        ? roundLabel(next.roundType, next.roundNumber)
+        : undefined,
     });
 
     res.json({ message: "Availability request sent." });
@@ -137,10 +178,21 @@ router.post("/:id/request-availability", protect, async (req, res) => {
 // GET /api/candidates/availability/:token — PUBLIC, no login
 router.get("/availability/:token", async (req, res) => {
   try {
-    const candidate = await Candidate.findOne({ "availability.token": req.params.token });
-    if (!candidate) return res.status(404).json({ message: "This link is invalid." });
-    if (candidate.availability.tokenExpires && candidate.availability.tokenExpires < new Date()) {
-      return res.status(400).json({ message: "This link has expired. Please ask the hiring team to resend it." });
+    const candidate = await Candidate.findOne({
+      "availability.token": req.params.token,
+    });
+    if (!candidate)
+      return res.status(404).json({ message: "This link is invalid." });
+    if (
+      candidate.availability.tokenExpires &&
+      candidate.availability.tokenExpires < new Date()
+    ) {
+      return res
+        .status(400)
+        .json({
+          message:
+            "This link has expired. Please ask the hiring team to resend it.",
+        });
     }
     res.json({
       name: candidate.name,
@@ -159,13 +211,26 @@ router.post("/availability/:token", async (req, res) => {
   try {
     const { slots, notes } = req.body;
     if (!Array.isArray(slots) || slots.filter(Boolean).length === 0) {
-      return res.status(400).json({ message: "Please provide at least one available time slot." });
+      return res
+        .status(400)
+        .json({ message: "Please provide at least one available time slot." });
     }
 
-    const candidate = await Candidate.findOne({ "availability.token": req.params.token });
-    if (!candidate) return res.status(404).json({ message: "This link is invalid." });
-    if (candidate.availability.tokenExpires && candidate.availability.tokenExpires < new Date()) {
-      return res.status(400).json({ message: "This link has expired. Please ask the hiring team to resend it." });
+    const candidate = await Candidate.findOne({
+      "availability.token": req.params.token,
+    });
+    if (!candidate)
+      return res.status(404).json({ message: "This link is invalid." });
+    if (
+      candidate.availability.tokenExpires &&
+      candidate.availability.tokenExpires < new Date()
+    ) {
+      return res
+        .status(400)
+        .json({
+          message:
+            "This link has expired. Please ask the hiring team to resend it.",
+        });
     }
 
     candidate.availability.slots = slots.filter(Boolean);
@@ -183,14 +248,25 @@ router.post("/availability/:token", async (req, res) => {
 // PATCH /api/candidates/:id/offer — Offer & Pre-Onboarding checklist
 router.patch("/:id/offer", protect, async (req, res) => {
   try {
-    const { offerSentAt, offerAcceptedAt, documentsCollected, onboardingDate, status } = req.body;
+    const {
+      offerSentAt,
+      offerAcceptedAt,
+      documentsCollected,
+      onboardingDate,
+      status,
+    } = req.body;
     const candidate = await Candidate.findById(req.params.id);
-    if (!candidate) return res.status(404).json({ message: "Candidate not found" });
+    if (!candidate)
+      return res.status(404).json({ message: "Candidate not found" });
 
-    if (offerSentAt !== undefined) candidate.onboarding.offerSentAt = offerSentAt;
-    if (offerAcceptedAt !== undefined) candidate.onboarding.offerAcceptedAt = offerAcceptedAt;
-    if (documentsCollected !== undefined) candidate.onboarding.documentsCollected = documentsCollected;
-    if (onboardingDate !== undefined) candidate.onboarding.onboardingDate = onboardingDate;
+    if (offerSentAt !== undefined)
+      candidate.onboarding.offerSentAt = offerSentAt;
+    if (offerAcceptedAt !== undefined)
+      candidate.onboarding.offerAcceptedAt = offerAcceptedAt;
+    if (documentsCollected !== undefined)
+      candidate.onboarding.documentsCollected = documentsCollected;
+    if (onboardingDate !== undefined)
+      candidate.onboarding.onboardingDate = onboardingDate;
     if (status !== undefined) candidate.setStatus(status);
 
     await candidate.save();
