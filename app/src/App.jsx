@@ -37,7 +37,16 @@ export default function App() {
 
   if (loading) {
     return (
-      <Box sx={{ height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 2 }}>
+      <Box
+        sx={{
+          height: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexDirection: "column",
+          gap: 2,
+        }}
+      >
         <CircularProgress size={60} />
         <Typography>Loading your session...</Typography>
       </Box>
@@ -48,36 +57,64 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         {/* Public — no login needed */}
-        <Route path="/" element={<PublicPage><ResumeUpload /></PublicPage>} />
-        <Route path="/login" element={!user ? <PublicPage><AuthPage /></PublicPage> : <Navigate to="/dashboard" />} />
-        <Route path="/verify-email" element={<PublicPage><VerifyEmail /></PublicPage>} />
+        <Route
+          path="/"
+          element={
+            <PublicPage>
+              <ResumeUpload />
+            </PublicPage>
+          }
+        />
+        <Route
+          path="/login"
+          element={
+            !user ? (
+              <PublicPage>
+                <AuthPage />
+              </PublicPage>
+            ) : (
+              <Navigate to="/dashboard" />
+            )
+          }
+        />
+        <Route
+          path="/verify-email"
+          element={
+            <PublicPage>
+              <VerifyEmail />
+            </PublicPage>
+          }
+        />
 
         {/* interview feedback public route */}
-        <Route path="/interview-feedback/:token" element={<InterviewFeedbackPublic />} />
-        
+        <Route
+          path="/interview-feedback/:token"
+          element={<InterviewFeedbackPublic />}
+        />
+
         {/* Hiring Manager area — all share the sidebar/topbar shell */}
         <Route element={<ProtectedLayout user={user} />}>
           <Route
-  path="/dashboard"
-  element={
-    <Suspense
-      fallback={
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            minHeight: "100vh",
-          }}
-        >
-          <CircularProgress />
-        </Box>
-      }
-    >
-      <Dashboard />
-    </Suspense>
-  }
-/>
+            path="/dashboard"
+            element={
+              <Suspense
+                fallback={
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      minHeight: "100vh",
+                    }}
+                  >
+                    <CircularProgress />
+                  </Box>
+                }
+              >
+                <Dashboard />
+              </Suspense>
+            }
+          />
           <Route path="/pool" element={<TalentPool />} />
           <Route path="/candidate/:id" element={<CandidateDetail />} />
           <Route path="/candidate/:id/offer" element={<OfferOnboarding />} />
