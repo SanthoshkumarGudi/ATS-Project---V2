@@ -1,39 +1,12 @@
 // backend/src/routes/candidates.js
 const express = require("express");
 const router = express.Router();
-const crypto = require("crypto");
 const Candidate = require("../models/Candidate");
 const Interview = require("../models/Interview");
 const { protect } = require("../middleware/auth");
 const { computeTier } = require("../utils/tier");
 const { computeNextRound, roundLabel } = require("../utils/interviewFlow");
-const { sendInterviewEmail } = require("../utils/emailService");
-
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
-const AVAILABILITY_TOKEN_VALID_DAYS = 14;
-
-async function sendAvailabilityRequest(candidate) {
-  const token = crypto.randomBytes(32).toString("hex");
-  candidate.availability = candidate.availability || {};
-  candidate.availability.token = token;
-  candidate.availability.tokenExpires = new Date(Date.now() + AVAILABILITY_TOKEN_VALID_DAYS * 24 * 60 * 60 * 1000);
-  candidate.availability.requestedAt = new Date();
-  await candidate.save();
-
-  if (!candidate.email) {
-    console.warn(`⚠️  No email on file for ${candidate.name} — availability request not sent.`);
-    return;
-  }
-
-  const link = `${FRONTEND_URL}/availability/${token}`;
-  await sendInterviewEmail(
-    candidate.email,
-    "You've been shortlisted — share your availability",
-    `<h2>You've been shortlisted!</h2>
-     <p>Please let us know your available interview time slots by clicking below:</p>
-     <a href="${link}" target="_blank" style="background:#1f8f86;color:white;padding:12px 24px;text-decoration:none;border-radius:8px;font-weight:bold;">Share My Availability</a>`,
-  );
-}
+const { requestAvailability } = require("../utils/availabilityService");
 
 // GET /api/candidates — search/filter the pool
 router.get("/", protect, async (req, res) => {
@@ -129,7 +102,8 @@ router.patch("/:id", protect, async (req, res) => {
     await candidate.save();
 
     if (justShortlisted) {
-      await sendAvailabilityRequest(candidate);
+      // First round is always HR per the fixed sequence, so label it explicitly.
+      await requestAvailability(candidate, { roundLabel: roundLabel("hr", 1) });
     }
 
     res.json({ message: "Candidate updated", candidate });
@@ -139,12 +113,20 @@ router.patch("/:id", protect, async (req, res) => {
   }
 });
 
-// POST /api/candidates/:id/request-availability — manual (re)send, e.g. if the candidate lost the link
+// POST /api/candidates/:id/request-availability — manual (re)send, e.g. if the candidate lost the link.
+// Scopes the email copy to whatever round is actually coming up next.
 router.post("/:id/request-availability", protect, async (req, res) => {
   try {
     const candidate = await Candidate.findById(req.params.id);
     if (!candidate) return res.status(404).json({ message: "Candidate not found" });
-    await sendAvailabilityRequest(candidate);
+
+    const completed = await Interview.find({ candidate: candidate._id, status: "completed" }).sort({ scheduledAt: 1 });
+    const next = computeNextRound(completed);
+
+    await requestAvailability(candidate, {
+      roundLabel: next ? roundLabel(next.roundType, next.roundNumber) : undefined,
+    });
+
     res.json({ message: "Availability request sent." });
   } catch (err) {
     console.error("Resend availability request error:", err);

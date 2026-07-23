@@ -8,6 +8,7 @@ const { protect } = require("../middleware/auth");
 const { sendInterviewEmail } = require("../utils/emailService");
 const { createGoogleMeetEvent } = require("../utils/googleMeetService");
 const { FIXED_SEQUENCE, roundLabel, computeNextRound } = require("../utils/interviewFlow");
+const { requestAvailability } = require("../utils/availabilityService");
 
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 const FEEDBACK_TOKEN_VALID_DAYS = 45;
@@ -28,14 +29,9 @@ router.post("/", protect, async (req, res) => {
     const { candidateId, scheduledAt, interviewerName, interviewerEmail, roundType: manualRoundType } = req.body;
 
     const candidate = await Candidate.findById(candidateId);
-    
     if (!candidate) return res.status(404).json({ message: "Candidate not found" });
-      
 
-    // this block is in testing
-      if (!candidate) return res.status(404).json({ message: "Candidate not found" });
-
-    // NEW: block scheduling ANY new round while one is still pending, regardless of type.
+    // Block scheduling ANY new round while one is still pending, regardless of type.
     const pendingInterview = await Interview.findOne({ candidate: candidateId, status: "scheduled" });
     if (pendingInterview) {
       return res.status(400).json({
@@ -44,8 +40,6 @@ router.post("/", protect, async (req, res) => {
         message: `${candidate.name} already has a pending interview (not yet completed). Feedback must be submitted before scheduling another round.`,
       });
     }
-
-    //untill this 
 
     let next;
     if (manualRoundType) {
@@ -271,6 +265,9 @@ router.get("/feedback/:token", async (req, res) => {
 //   repeat  -> same stage, candidate stays at "<type>-round" (a Round 2/3/... gets scheduled next)
 //   reject  -> candidate.status = "rejected", process ends
 //   hold    -> candidate.status = "on-hold", process paused
+//
+// Whenever "proceed" or "repeat" leaves another round to be scheduled, a fresh
+// availability request is fired off automatically, scoped to that next round.
 // ============================================================
 router.post("/feedback/:token", async (req, res) => {
   try {
@@ -305,6 +302,16 @@ router.post("/feedback/:token", async (req, res) => {
       candidate.setStatus(idx === FIXED_SEQUENCE.length - 1 ? "final-evaluation" : `${FIXED_SEQUENCE[idx + 1]}-round`);
     }
     await candidate.save();
+
+    // If there's another round to schedule (repeat, or proceed to a non-final stage),
+    // ask the candidate for fresh availability scoped to that round.
+    if (recommendation === "proceed" || recommendation === "repeat") {
+      const completed = await Interview.find({ candidate: candidate._id, status: "completed" }).sort({ scheduledAt: 1 });
+      const upcoming = computeNextRound(completed);
+      if (upcoming) {
+        await requestAvailability(candidate, { roundLabel: roundLabel(upcoming.roundType, upcoming.roundNumber) });
+      }
+    }
 
     res.json({ message: "Thank you — your feedback has been submitted." });
   } catch (err) {

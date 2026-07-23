@@ -104,6 +104,7 @@ export default function CandidateDetail() {
   const [manualMode, setManualMode] = useState(false);
   const [resumePreviewUrl, setResumePreviewUrl] = useState(null); // null = closed
   const [resumeLoading, setResumeLoading] = useState(false);
+  const [availabilitySending, setAvailabilitySending] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -154,6 +155,18 @@ export default function CandidateDetail() {
     }
   };
 
+  const handleResendAvailability = async () => {
+    setAvailabilitySending(true);
+    try {
+      await axios.post(`/candidates/${id}/request-availability`);
+      await load();
+    } catch (err) {
+      console.error("Resend availability failed:", err);
+    } finally {
+      setAvailabilitySending(false);
+    }
+  };
+
   if (loading || !candidate) {
     return <Box sx={{ display: "flex", justifyContent: "center", py: 10 }}><CircularProgress /></Box>;
   }
@@ -161,8 +174,24 @@ export default function CandidateDetail() {
   const canScheduleNext = !!nextRound && candidate.status !== "rejected";
   const isShortlistedOrLater = candidate.status !== "new";
 
-  console.log("interviews object is ", interviews);
-  
+  // A round is "pending" if one is currently scheduled — availability collection
+  // is irrelevant once a slot is actually booked, and resumes after that round completes.
+  const hasPendingInterview = interviews.some((iv) => iv.status === "scheduled");
+
+  // Show the resend button only when: there's genuinely a next round to schedule,
+  // nothing is currently booked, a request has actually gone out (not just inferred
+  // from candidate.status), and the candidate hasn't answered it yet.
+  const needsAvailability =
+    !!nextRound &&
+    !hasPendingInterview &&
+    !!candidate.availability?.requestedAt &&
+    !candidate.availability?.submittedAt &&
+    candidate.status !== "rejected";
+
+  const availabilityExpired =
+    candidate.availability?.tokenExpires && new Date(candidate.availability.tokenExpires) < new Date();
+
+    console.log("candidate is", candidate);
 
   return (
     <Container maxWidth="md" sx={{ py: 5 }}>
@@ -222,7 +251,7 @@ export default function CandidateDetail() {
             {(candidate.skills || []).map((s) => <Chip key={s} label={s} size="small" />)}
           </Stack>
 
-          {candidate.availability?.slots?.length > 0 && (
+          {candidate.availability?.slots?.length > 0 && candidate.status!== "rejected"&& candidate.status!== "hired" && (
             <Box sx={{ mt: 2, p: 2, bgcolor: "#f0fdf9", borderRadius: "12px", border: "1px solid #cdeee4" }}>
               <Typography variant="caption" sx={{ textTransform: "uppercase", fontWeight: 800, color: colors.teal }}>
                 Candidate's Available Slots
@@ -240,13 +269,20 @@ export default function CandidateDetail() {
             </Box>
           )}
 
-          {candidate.status !== "new" && !candidate.availability?.submittedAt && (
-            <Button
-              size="small" variant="outlined" sx={{ mt: 2, textTransform: "none" }}
-              onClick={async () => { await axios.post(`/candidates/${id}/request-availability`); load(); }}
-            >
-              Resend Availability Request
-            </Button>
+          {needsAvailability && (
+            <Stack spacing={0.5} sx={{ mt: 2 }}>
+              <Typography variant="caption" color="text.secondary">
+                Availability requested {new Date(candidate.availability.requestedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                {nextRound?.label && ` for ${nextRound.label}`}
+                {availabilityExpired && " · link expired"}
+              </Typography>
+              <Button
+                size="small" variant="outlined" sx={{ textTransform: "none", alignSelf: "flex-start" }}
+                onClick={handleResendAvailability} disabled={availabilitySending}
+              >
+                {availabilitySending ? "Sending..." : "Resend Availability Request"}
+              </Button>
+            </Stack>
           )}
 
           {["summary", "experience", "internships", "education", "projects", "certifications"].map((key) =>
@@ -268,6 +304,7 @@ export default function CandidateDetail() {
             </Button>
           )}
         </SectionCard>
+
         {/* Interview rounds — only visible once shortlisted */}
         {isShortlistedOrLater && (
           <SectionCard>
