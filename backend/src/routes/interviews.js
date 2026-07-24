@@ -7,12 +7,8 @@ const Candidate = require("../models/Candidate");
 const { protect } = require("../middleware/auth");
 const { sendInterviewEmail } = require("../utils/emailService");
 const { createGoogleMeetEvent } = require("../utils/googleMeetService");
-const {
-  FIXED_SEQUENCE,
-  roundLabel,
-  computeNextRound,
-} = require("../utils/interviewFlow");
 const { requestAvailability } = require("../utils/availabilityService");
+const { roundLabel, computeNextRound, sequenceFor } = require("../utils/interviewFlow");
 
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 const FEEDBACK_TOKEN_VALID_DAYS = 45;
@@ -38,9 +34,9 @@ router.post("/", protect, async (req, res) => {
       roundType: manualRoundType,
     } = req.body;
 
-    const candidate = await Candidate.findById(candidateId);
-    if (!candidate)
-      return res.status(404).json({ message: "Candidate not found" });
+    const candidate = await Candidate.findById(candidateId).populate("interviewTemplate");
+    if (!candidate) return res.status(404).json({ message: "Candidate not found" });
+    const sequence = sequenceFor(candidate);
 
     // Block scheduling ANY new round while one is still pending, regardless of type.
     const pendingInterview = await Interview.findOne({
@@ -70,11 +66,8 @@ router.post("/", protect, async (req, res) => {
         roundNumber: allOfType.length ? (allOfType[0].roundNumber || 1) + 1 : 1,
       };
     } else {
-      const completed = await Interview.find({
-        candidate: candidateId,
-        status: "completed",
-      }).sort({ scheduledAt: 1 });
-      next = computeNextRound(completed);
+      const completed = await Interview.find({ candidate: candidateId, status: "completed" }).sort({ scheduledAt: 1 });
+      next = computeNextRound(completed, sequence);
     }
 
     if (!next) {
@@ -362,9 +355,8 @@ router.post("/feedback/:token", async (req, res) => {
     if (!recommendation)
       return res.status(400).json({ message: "Recommendation is required" });
 
-    const interview = await Interview.findOne({
-      feedbackToken: req.params.token,
-    }).populate("candidate");
+    const interview = await Interview.findOne({ feedbackToken: req.params.token })
+      .populate({ path: "candidate", populate: { path: "interviewTemplate" } });
     if (!interview)
       return res
         .status(404)
@@ -409,27 +401,20 @@ router.post("/feedback/:token", async (req, res) => {
     } else if (recommendation === "repeat") {
       candidate.setStatus(`${interview.roundType}-round`);
     } else if (recommendation === "proceed") {
-      const idx = FIXED_SEQUENCE.indexOf(interview.roundType);
-      candidate.setStatus(
-        idx === FIXED_SEQUENCE.length - 1
-          ? "final-evaluation"
-          : `${FIXED_SEQUENCE[idx + 1]}-round`,
-      );
+      const sequence = sequenceFor(candidate);
+      const idx = sequence.indexOf(interview.roundType);
+      candidate.setStatus(idx === sequence.length - 1 ? "final-evaluation" : `${sequence[idx + 1]}-round`);
     }
     await candidate.save();
 
     // If there's another round to schedule (repeat, or proceed to a non-final stage),
     // ask the candidate for fresh availability scoped to that round.
     if (recommendation === "proceed" || recommendation === "repeat") {
-      const completed = await Interview.find({
-        candidate: candidate._id,
-        status: "completed",
-      }).sort({ scheduledAt: 1 });
-      const upcoming = computeNextRound(completed);
+      const completed = await Interview.find({ candidate: candidate._id, status: "completed" }).sort({ scheduledAt: 1 });
+      const sequence = sequenceFor(candidate);
+      const upcoming = computeNextRound(completed, sequence);
       if (upcoming) {
-        await requestAvailability(candidate, {
-          roundLabel: roundLabel(upcoming.roundType, upcoming.roundNumber),
-        });
+        await requestAvailability(candidate, { roundLabel: roundLabel(upcoming.roundType, upcoming.roundNumber) });
       }
     }
 

@@ -64,6 +64,7 @@ const candidateSchema = new mongoose.Schema(
       slots: [{ type: String }],
       notes: { type: String },
     },
+    interviewTemplate: { type: mongoose.Schema.Types.ObjectId, ref: "InterviewTemplate", default: null },
     convertedToEmployee: { type: Boolean, default: false },
     employeeId: {
       type: mongoose.Schema.Types.ObjectId,

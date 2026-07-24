@@ -11,6 +11,7 @@ import {
   LogOut,
   Search,
   Bell,
+  Layers
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { colors } from "../theme/dashboardColors";
@@ -20,6 +21,7 @@ const NAV_MAIN = [
   { label: "Talent Pool", path: "/pool", icon: Users },
   { label: "Internal Portal", path: "/internal-portal", icon: Building2 },
   { label: "Rejected", path: "/rejected", icon: XCircle },
+  { label: "Interview Templates", path: "/interview-templates", icon: Layers },
 ];
 const NAV_INSIGHTS = [
   {
@@ -51,6 +53,10 @@ const PAGE_META = {
   "/qr": {
     title: "Share QR Code",
     sub: "Let candidates apply by scanning a code — no login needed",
+  },
+  "/interview-templates": {
+    title: "Interview Templates",
+    sub: "Configure which rounds apply, and in what order",
   },
 };
 

@@ -11,6 +11,8 @@ import {
   Stack,
   Button,
   CircularProgress,
+  TextField,
+  MenuItem,
 } from "@mui/material";
 import { Eye, Download } from "lucide-react";
 import axios from "../utils/api";
@@ -169,6 +171,7 @@ export default function CandidateDetail() {
   const [resumePreviewUrl, setResumePreviewUrl] = useState(null); // null = closed
   const [resumeLoading, setResumeLoading] = useState(false);
   const [availabilitySending, setAvailabilitySending] = useState(false);
+    const [templates, setTemplates] = useState([]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -199,6 +202,15 @@ export default function CandidateDetail() {
         URL.revokeObjectURL(resumePreviewUrl);
     };
   }, [resumePreviewUrl]);
+
+  useEffect(() => {
+    axios.get("/interview-templates").then((res) => setTemplates(res.data)).catch(() => {});
+  }, []);
+
+  const handleTemplateChange = async (templateId) => {
+    await axios.patch(`/candidates/${id}`, { interviewTemplate: templateId || null });
+    load();
+  };
 
   const updateStatus = async (status) => {
     await axios.patch(`/candidates/${id}`, { status });
@@ -245,6 +257,8 @@ export default function CandidateDetail() {
 
   const canScheduleNext = !!nextRound && candidate.status !== "rejected";
   const isShortlistedOrLater = candidate.status !== "new";
+  const activeSequence = candidate.interviewTemplate?.rounds?.length ? candidate.interviewTemplate.rounds : ["hr", "tech", "manager"];
+  const sequenceLabelText = activeSequence.map((r) => ROUND_LABELS[r] || r).join(" → ");
 
   // A round is "pending" if one is currently scheduled — availability collection
   // is irrelevant once a slot is actually booked, and resumes after that round completes.
@@ -498,7 +512,10 @@ export default function CandidateDetail() {
             <Button
               variant="contained"
               sx={{ mt: 3 }}
-              onClick={() => updateStatus("shortlisted")}
+              onClick={() => {
+                updateStatus("shortlisted");
+                setLoading(true);
+              }}
             >
               Shortlist Candidate
             </Button>
@@ -516,11 +533,24 @@ export default function CandidateDetail() {
               flexWrap="wrap"
               gap={1}
             >
-              <Typography
-                sx={{ fontSize: 15, fontWeight: 800, color: colors.navy }}
-              >
-                Interview Rounds (HR → Technical → Manager)
-              </Typography>
+              <Box>
+                <Typography sx={{ fontSize: 15, fontWeight: 800, color: colors.navy }}>
+                  Interview Rounds ({sequenceLabelText})
+                </Typography>
+                <TextField
+                  select size="small" variant="standard" sx={{ mt: 0.5, minWidth: 280 }}
+                  value={candidate.interviewTemplate?._id || ""}
+                  onChange={(e) => handleTemplateChange(e.target.value)}
+                  label="to change the template click here"
+                >
+                  <MenuItem value="" >
+                    Default (HR → Technical → Manager)
+                  </MenuItem>
+                  {templates.map((t) => (
+                    <MenuItem key={t._id} value={t._id}>{t.name}</MenuItem>
+                  ))}
+                </TextField>
+              </Box>
               <Stack direction="row" spacing={1}>
                 {canScheduleNext && (
                   <Button

@@ -17,6 +17,7 @@ import InternalPortal from "./pages/InternalPortal";
 import ShareQR from "./pages/ShareQR";
 import VerifyEmail from "./pages/VerifyEmail";
 import InterviewFeedbackPublic from "./pages/InterviewFeedbackPublic";
+import InterviewTemplates from "./pages/InterviewTemplates";
 
 //Lazy load the dashboard to improve initial load time
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -132,6 +133,7 @@ export default function App() {
           <Route path="/interview-analytics" element={<InterviewAnalytics />} />
           <Route path="/internal-portal" element={<InternalPortal />} />
           <Route path="/qr" element={<ShareQR />} />
+          <Route path="/interview-templates" element={<InterviewTemplates />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" />} />

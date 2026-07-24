@@ -24,16 +24,29 @@ const jwt = require("jsonwebtoken");
 const bcryptjs = require("bcryptjs");
 const crypto = require("crypto");
 const { sendInterviewEmail } = require("./utils/emailService");
+const InterviewTemplate = require("./models/InterviewTemplate");
 
 mongoose
   .connect(process.env.MONGO_URI)
-  .then(() => console.log("✅ MongoDB Connected Locally (atsdb)"))
+  .then(async () => {
+    console.log("✅ MongoDB Connected Locally (atsdb)");
+    const count = await InterviewTemplate.countDocuments();
+    if (count === 0) {
+      await InterviewTemplate.create([
+        { name: "Full Process", rounds: ["hr", "tech", "manager"] },
+        { name: "Short Process", rounds: ["hr", "manager"] },
+        { name: "Manager Only", rounds: ["manager"] },
+      ]);
+      console.log("🌱 Seeded default interview templates");
+    }
+  })
   .catch((err) => {
     console.error("❌ MongoDB Connection Error:", err.message);
     process.exit(1);
   });
 
 // ==================== ROUTES ====================
+app.use("/api/interview-templates", require("./routes/interviewTemplates"));
 app.use("/api/resumes", require("./routes/resumes")); // public upload
 app.use("/api/candidates", require("./routes/candidates")); // talent pool (protected)
 app.use("/api/interviews", require("./routes/interviews")); // protected
