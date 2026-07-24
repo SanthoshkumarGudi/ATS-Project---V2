@@ -121,6 +121,8 @@ export default function InterviewTemplates() {
 
   const handleDelete = async (id) => {
     setError("");
+    const confirmed = window.confirm("Are you sure you want to delete this template?");
+    if (!confirmed) return;
     try {
       await axios.delete(`/interview-templates/${id}`);
       fetchTemplates();

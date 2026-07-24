@@ -210,6 +210,7 @@ export default function CandidateDetail() {
   const handleTemplateChange = async (templateId) => {
     await axios.patch(`/candidates/${id}`, { interviewTemplate: templateId || null });
     load();
+    alert("Interview template updated successfully.");
   };
 
   const updateStatus = async (status) => {
@@ -538,7 +539,7 @@ export default function CandidateDetail() {
                   Interview Rounds ({sequenceLabelText})
                 </Typography>
                 <TextField
-                  select size="small" variant="standard" sx={{ mt: 0.5, minWidth: 280 }}
+                  select size="small" variant="standard" sx={{ mt: 1, minWidth: 280, pt: 0.5 }}
                   value={candidate.interviewTemplate?._id || ""}
                   onChange={(e) => handleTemplateChange(e.target.value)}
                   label="to change the template click here"
