@@ -9,6 +9,9 @@ const transporter = nodemailer.createTransport({
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
+  timeout: 15000, // 15 seconds
+  logger: true,
+  debug: true,
 });
 
 const sendInterviewEmail = async (to, subject, htmlContent) => {
